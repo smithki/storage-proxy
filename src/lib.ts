@@ -103,7 +103,8 @@ function createProxy<TStorageDefinitions extends JsonData>(
     set: (target, prop, value) => {
       if (typeof prop === 'string') {
         const namespacedKey = getNamespacedKey(namespace, prop);
-        window[storageTarget].setItem(namespacedKey, JSON.stringify(value));
+        if (typeof value === 'undefined') delete target[prop as any];
+        else window[storageTarget].setItem(namespacedKey, JSON.stringify(value));
       }
 
       return Reflect.set(target, prop, value);
@@ -123,6 +124,15 @@ function createProxy<TStorageDefinitions extends JsonData>(
         set: (val: any) => target[prop as any] = val,
       };
       return descriptor;
+    },
+
+    deleteProperty: (target, prop) => {
+      if (typeof prop === 'string') {
+        const namespacedKey = getNamespacedKey(namespace, prop);
+        window[storageTarget].removeItem(namespacedKey);
+      }
+
+      return Reflect.deleteProperty(target, prop);
     },
   });
 }
