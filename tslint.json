@@ -1,3 +1,6 @@
 {
-  "extends": "@ikscodes/tslint-config"
+  "extends": "@ikscodes/tslint-config",
+  "rules": {
+    "function-name": false,
+  }
 }

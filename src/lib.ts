@@ -12,7 +12,21 @@ export interface JsonData {
   [key: string]: JsonPrimitive | JsonArray | JsonData;
 }
 
+export enum StorageTarget {
+  Local = 'localStorage',
+  Session = 'sessionStorage',
+}
+
 // --- Utilities ------------------------------------------------------------ //
+
+function getStorageKeys(storageTarget: StorageTarget) {
+  const result: string[] = [];
+  for (let i = 0; i < window[storageTarget].length; i++) {
+    const key = window[storageTarget].key(i);
+    result.push(key!);
+  }
+  return result;
+}
 
 /**
  * Create an optionally-namespaced, `localStorage`-compatible key.
@@ -21,8 +35,27 @@ export interface JsonData {
  * @param key - A key to identify the `localStorage` data.
  */
 function getNamespacedKey(namespace: string | undefined, key: string) {
+  if (isKeyNamespaced(key)) return key;
   if (!namespace) return key;
   return `${namespace}:${key}`;
+}
+
+function extractNamespaceFromKey(key: string) {
+  const i = key.indexOf(':');
+  return key.slice(0, i);
+}
+
+function isKeyNamespaced(key: string) {
+  return key.includes(':');
+}
+
+function validateNamespace(namespace: string | undefined, key: string) {
+  if (isKeyNamespaced(key)) {
+    if (extractNamespaceFromKey(key) === namespace) return true;
+    return false;
+  }
+  if (!namespace) return true;
+  return false;
 }
 
 /**
@@ -33,10 +66,18 @@ function getNamespacedKey(namespace: string | undefined, key: string) {
  * @param namespace - An optional namespace to use.
  */
 function createProxy<TStorageDefinitions extends JsonData>(
-  storageTarget: 'localStorage' | 'sessionStorage',
+  storageTarget: StorageTarget,
   namespace?: string,
 ): TStorageDefinitions {
-  const initialData: TStorageDefinitions = {} as any;
+  const initialData: TStorageDefinitions = {
+    *[Symbol.iterator]() {
+      for (const key of getStorageKeys(storageTarget)) {
+        if (validateNamespace(namespace, key)) {
+          yield this[key];
+        }
+      }
+    },
+  } as any;
 
   // Return a proxy object
   return new Proxy(initialData, {
@@ -75,32 +116,48 @@ function createProxy<TStorageDefinitions extends JsonData>(
 
       return Reflect.set(target, prop, value);
     },
+
+    ownKeys: target => {
+      return getStorageKeys(storageTarget).filter(
+        key => validateNamespace(namespace, key),
+      );
+    },
+
+    getOwnPropertyDescriptor: (target, prop) => {
+      const descriptor: PropertyDescriptor =  {
+        configurable: true,
+        enumerable: true,
+        get: () => target[prop as any],
+        set: (val: any) => target[prop as any] = val,
+      };
+      return descriptor;
+    },
   });
 }
 
 // --- Proxy factory -------------------------------------------------------- //
 
-/** A factory to create `localStorage` and `sessionStorage` proxy objects. */
-export class StorageProxy {
+/** Factories to create `localStorage` and `sessionStorage` proxy objects. */
+export const StorageProxy = {
   /**
    * Creates a `localStorage` proxy object that can be used like a plain JS object.
    *
    * @param namespace - An optional namespace to prefix `localStorage` keys with.
    */
-  public static createLocalStorage<TStorageDefinitions extends JsonData>(
+  createLocalStorage<TStorageDefinitions extends JsonData = any>(
     namespace?: string,
   ): TStorageDefinitions {
-    return createProxy('localStorage', namespace);
-  }
+    return createProxy<TStorageDefinitions>(StorageTarget.Local, namespace);
+  },
 
   /**
    * Creates a `sessionStorage` proxy object that can be used like a plain JS object.
    *
    * @param namespace - An optional namespace to prefix `sessionStorage` keys with.
    */
-  public static createSessionStorage<TStorageDefinitions extends JsonData>(
+  createSessionStorage<TStorageDefinitions extends JsonData = any>(
     namespace?: string,
   ): TStorageDefinitions {
-    return createProxy<TStorageDefinitions>('sessionStorage', namespace);
-  }
-}
+    return createProxy<TStorageDefinitions>(StorageTarget.Session, namespace);
+  },
+};
