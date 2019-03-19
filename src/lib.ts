@@ -6,7 +6,7 @@ import onChange from 'on-change';
 
 export type JsonPrimitive = string | number | boolean | ArrayBuffer | null;
 
-export type JsonArray = JsonPrimitive[];
+export type JsonArray = (JsonPrimitive | JsonData)[];
 
 export interface JsonData {
   [key: string]: JsonPrimitive | JsonArray | JsonData;
@@ -40,32 +40,38 @@ function createProxy<TStorageDefinitions extends JsonData>(
 
   // Return a proxy object
   return new Proxy(initialData, {
-    get: (target, prop: string, receiver) => {
-      const namespacedKey = getNamespacedKey(namespace, prop);
-      const data = window[storageTarget].getItem(namespacedKey);
+    get: (target, prop, receiver) => {
+      if (typeof prop === 'string') {
+        const namespacedKey = getNamespacedKey(namespace, prop);
+        const data = window[storageTarget].getItem(namespacedKey);
 
-      if (data) {
-        const parsedData = JSON.parse(data);
+        if (data) {
+          const parsedData = JSON.parse(data);
 
-        if (typeof parsedData === 'object') {
-          const proxyData = onChange(parsedData, () => {
-            window[storageTarget].setItem(
-              namespacedKey,
-              JSON.stringify(proxyData),
-            );
-          });
-          return proxyData;
+          if (typeof parsedData === 'object') {
+            const proxyData = onChange(parsedData, () => {
+              window[storageTarget].setItem(
+                namespacedKey,
+                JSON.stringify(proxyData),
+              );
+            });
+            return proxyData;
+          }
+
+          return parsedData;
         }
 
-        return parsedData;
+        return null;
       }
 
       return null;
     },
 
-    set: (target, prop: string, value) => {
-      const namespacedKey = getNamespacedKey(namespace, prop);
-      window[storageTarget].setItem(namespacedKey, JSON.stringify(value));
+    set: (target, prop, value) => {
+      if (typeof prop === 'string') {
+        const namespacedKey = getNamespacedKey(namespace, prop);
+        window[storageTarget].setItem(namespacedKey, JSON.stringify(value));
+      }
 
       return Reflect.set(target, prop, value);
     },
