@@ -236,6 +236,6 @@ export const StorageProxy = {
     }
 
     window.localStorage.setItem(namespacedKey, JSON.stringify(btoa(seed)));
-    return true;
+    return false;
   }
 };
