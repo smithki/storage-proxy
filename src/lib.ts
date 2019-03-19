@@ -231,11 +231,12 @@ export const StorageProxy = {
     const existingSeed = window.localStorage.getItem(namespacedKey);
     const decodedSeed = existingSeed ? atob(JSON.parse(existingSeed)) : undefined;
 
+
     if (decodedSeed) {
       return decodedSeed === seed;
     }
 
     window.localStorage.setItem(namespacedKey, JSON.stringify(btoa(seed)));
-    return false;
+    return true;
   }
 };
