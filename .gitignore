@@ -3,5 +3,6 @@ npm-debug.log
 src/**/*.js
 src/**/*.js.map
 dist/**
+test/dist/**
 .vscode/**/*
 .rts2_cache_*
