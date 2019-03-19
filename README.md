@@ -7,7 +7,7 @@
 
 ## 💁🏼‍♂️ Introduction
 
-Interact with [`localStorage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage) or [`sessionStorage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage) like a plain JavaScript object.
+Interact with [`localStorage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage) or [`sessionStorage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage) like a plain JavaScript object. You can even iterate over `keys` and `entries` as with plain objects.
 
 ## 🔗 Installation
 
@@ -32,13 +32,14 @@ import { StorageProxy } from 'storage-proxy';
 const myLocalStorage = StorageProxy.createLocalStorage('my-namespace');
 const mySessionStorage = StorageProxy.createSessionStorage('my-namespace');
 
-// Here's a (non-exhaustive) list of possibilities:
+// Here's a (non-exhaustive) list of some possibilities:
 
 myLocalStorage.hello = 'world';
 myLocalStorage.foo = [1, 2, 3];
 myLocalStorage.foo.push(4);
 myLocalStorage.bar = { baz: 'This works!' };
 myLocalStorage.bar.spam = 'This works too!';
+const copied = { ...myLocalStorage };
 ```
 
 In TypeScript, you can pass an interface as a [generic type parameter](https://www.typescriptlang.org/docs/handbook/generics.html) to the factory function:
