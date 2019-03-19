@@ -8,7 +8,7 @@ import onChange from 'on-change';
 const namespaceSymbol = Symbol('namespaceSymbol');
 const isStorageProxy = Symbol('isStorageProxy');
 
-const namespaceRegex = /sp\[(.+)\]:/;
+const namespaceRegex = /^\[(.+)\]:/;
 
 /** JSON-supported primitive types. */
 export type JsonPrimitive = string | number | boolean | ArrayBuffer | null;
@@ -58,7 +58,7 @@ function getStorageKeys(storageTarget: StorageTarget) {
 function getNamespacedKey(namespace: string | undefined, key: string) {
   if (isKeyNamespaced(key)) return key;
   if (!namespace) return key;
-  return `sp[${namespace}]:${key}`;
+  return `[${namespace}]:${key}`;
 }
 
 /**
@@ -229,7 +229,7 @@ export const StorageProxy = {
    */
   verifyCache<TStorageProxy extends StorageProxy<any>>(storageProxy: TStorageProxy, seed: string) {
     if (!storageProxy[isStorageProxy]) throw new Error('Provided argument is not a `StorageProxy` object.')
-    const namespacedKey = getNamespacedKey(storageProxy[namespaceSymbol], 'spcache');
+    const namespacedKey = getNamespacedKey(storageProxy[namespaceSymbol], 'storageProxyIntegrity');
     const existingSeed = window.localStorage.getItem(namespacedKey);
     const decodedSeed = existingSeed ? atob(JSON.parse(existingSeed)) : undefined;
 
