@@ -193,7 +193,10 @@ function createProxy<TStorageDefinitions extends JsonData>(
 
 // --- Proxy factory -------------------------------------------------------- //
 
-/** Factories to create `localStorage` and `sessionStorage` proxy objects. */
+/**
+ * Factories to create `localStorage` and `sessionStorage` proxy objects and
+ * related utilities.
+ */
 export const StorageProxy = {
   /**
    * Creates a `localStorage` proxy object that can be used like a plain JS object.
@@ -221,7 +224,7 @@ export const StorageProxy = {
    * Checks a cache key in `localStorage` to verify whether the cache integrity
    * is sound. This is useful for cache-busting.
    *
-   *
+   * @param storageProxy - The storage proxy object to verify.
    * @param seed - A seed to check the cache integrity with.
    */
   verifyCache<TStorageProxy extends StorageProxy<any>>(storageProxy: TStorageProxy, seed: string) {
@@ -244,7 +247,7 @@ export const StorageProxy = {
    * `sessionStorage`. Only keys under the namespace indicated by the
    * `StorageProxy` object are removed from the web storage caches.
    *
-   * @param storageProxy -
+   * @param storageProxy - The storage proxy object to clear.
    */
   clearStorage<TStorageProxy extends StorageProxy<any>>(storageProxy: TStorageProxy) {
     for (const key of Object.keys(storageProxy)) {
