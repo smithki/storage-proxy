@@ -24,10 +24,10 @@ interface TestStorage extends JsonData {
 
 @TestFixture('StorageProxy Tests')
 export class StorageProxyTestFixture {
-  lStore: TestStorage;
-  lStoreNs: TestStorageNs;
-  sStore: TestStorage;
-  sStoreNs: TestStorageNs;
+  lStore: Partial<TestStorage>;
+  lStoreNs: Partial<TestStorageNs>;
+  sStore: Partial<TestStorage>;
+  sStoreNs: Partial<TestStorageNs>;
 
   @SetupFixture
   public setupFixture() {
