@@ -41,7 +41,7 @@ myLocalStorage.bar = { baz: 'This works!' };
 myLocalStorage.bar.spam = 'This works too!';
 ```
 
-You can also type your web storage proxies by passing a TypeScript interface as a [generic](https://www.typescriptlang.org/docs/handbook/generics.html):
+In TypeScript, you can pass an interface as a [generic](https://www.typescriptlang.org/docs/handbook/generics.html) type parameter to the factory function:
 
 ```ts
 const myStorage = StorageProxy.createLocalStorage<{
