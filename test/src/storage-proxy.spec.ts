@@ -7,7 +7,7 @@ import { JsonData, StorageProxy } from '../../src/lib';
 
 // -------------------------------------------------------------------------- //
 
-const testKey1 = 'foo:bar';
+const testKey1 = 'sp[foo]:bar';
 const testKey2 = 'baz';
 const testStr = 'hello world';
 const testObj = { monty: 'python', numbers: [1, 2, 3] };
@@ -47,14 +47,14 @@ export class StorageProxyTestFixture {
   public setNamespacedLocalStorageKeyTest() {
     this.lStoreNs.test = 123;
 
-    Expect(JSON.parse(localStorage.getItem('foo:test')!)).toEqual(123);
+    Expect(JSON.parse(localStorage.getItem('sp[foo]:test')!)).toEqual(123);
   }
 
   @Test('Set a namespaced `sessionStorage` key')
   public setNamespacedSessionStorageKeyTest() {
     this.sStoreNs.test = 123;
 
-    Expect(JSON.parse(sessionStorage.getItem('foo:test')!)).toEqual(123);
+    Expect(JSON.parse(sessionStorage.getItem('sp[foo]:test')!)).toEqual(123);
   }
 
   @Test('Get namespaced `localStorage` key')

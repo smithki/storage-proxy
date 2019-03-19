@@ -19,6 +19,11 @@ export enum StorageTarget {
 
 // --- Utilities ------------------------------------------------------------ //
 
+/**
+ * Get all keys from the indicated web storage.
+ *
+ * @param storageTarget - `localStorage` or `sessionStorage`.
+ */
 function getStorageKeys(storageTarget: StorageTarget) {
   const result: string[] = [];
   for (let i = 0; i < window[storageTarget].length; i++) {
@@ -37,16 +42,22 @@ function getStorageKeys(storageTarget: StorageTarget) {
 function getNamespacedKey(namespace: string | undefined, key: string) {
   if (isKeyNamespaced(key)) return key;
   if (!namespace) return key;
-  return `${namespace}:${key}`;
+  return `sp[${namespace}]:${key}`;
 }
 
+/**
+ * Extracts the namespace from a given key
+ *
+ * @param key - Key to extract a namespace from.
+ */
 function extractNamespaceFromKey(key: string) {
-  const i = key.indexOf(':');
-  return key.slice(0, i);
+  const matches = key.match(/sp\[.+\]:/g);
+  if (matches) return matches[0];
+  return null;
 }
 
 function isKeyNamespaced(key: string) {
-  return key.includes(':');
+  return !!extractNamespaceFromKey(key);
 }
 
 function validateNamespace(namespace: string | undefined, key: string) {

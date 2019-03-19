@@ -8,6 +8,7 @@
     "noImplicitReturns": true,
     "noImplicitThis": true,
     "strictNullChecks": true,
+    "downlevelIteration": true,
     "target": "es5",
     "sourceMap": true,
     "outDir": "./dist",
