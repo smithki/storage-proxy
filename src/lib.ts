@@ -2,20 +2,34 @@
 
 import onChange from 'on-change';
 
-// --- Types ---------------------------------------------------------------- //
+// --- Types & constants ---------------------------------------------------- //
 
+// Internal symbol accessors
+const namespaceSymbol = Symbol('namespaceSymbol');
+const isStorageProxy = Symbol('isStorageProxy');
+
+/** JSON-supported primitive types. */
 export type JsonPrimitive = string | number | boolean | ArrayBuffer | null;
 
+/** JSON-supported array types. */
 export type JsonArray = (JsonPrimitive | JsonData)[];
 
+/** JSON-supported object interface. */
 export interface JsonData {
   [key: string]: JsonPrimitive | JsonArray | JsonData | undefined;
 }
 
+/** Web storage targets: `localStorage` and `sessionStorage`. */
 export enum StorageTarget {
   Local = 'localStorage',
   Session = 'sessionStorage',
 }
+
+/** The object type created by `StorageProxy.createLocalStorage()` and `StorageProxy.createSessionStorage()`. */
+export type StorageProxy<TStorageDefinitions extends JsonData> = Partial<TStorageDefinitions> & {
+  [namespaceSymbol]: string | undefined;
+  [isStorageProxy]: true;
+};
 
 // --- Utilities ------------------------------------------------------------ //
 
@@ -56,10 +70,21 @@ function extractNamespaceFromKey(key: string) {
   return null;
 }
 
+/**
+ * Checks if the given key is namespaced.\
+ *
+ * @param key - The key to check.
+ */
 function isKeyNamespaced(key: string) {
   return !!extractNamespaceFromKey(key);
 }
 
+/**
+ * Check is the given key is valid for the given namespace.
+ *
+ * @param namespace - The namespace to check against.
+ * @param key - The key to check.
+ */
 function validateNamespace(namespace: string | undefined, key: string) {
   if (isKeyNamespaced(key)) {
     if (extractNamespaceFromKey(key) === namespace) return true;
@@ -79,8 +104,11 @@ function validateNamespace(namespace: string | undefined, key: string) {
 function createProxy<TStorageDefinitions extends JsonData>(
   storageTarget: StorageTarget,
   namespace?: string,
-): TStorageDefinitions {
-  const initialData: TStorageDefinitions = {} as any;
+): StorageProxy<TStorageDefinitions> {
+  const initialData: StorageProxy<TStorageDefinitions> = {
+    [namespaceSymbol]: namespace,
+    [isStorageProxy]: true,
+  } as any;
 
   // Return a proxy object
   return new Proxy(initialData, {
@@ -108,7 +136,7 @@ function createProxy<TStorageDefinitions extends JsonData>(
         return null;
       }
 
-      return null;
+      return Reflect.get(target, prop, receiver);
     },
 
     set: (target, prop, value) => {
@@ -128,13 +156,17 @@ function createProxy<TStorageDefinitions extends JsonData>(
     },
 
     getOwnPropertyDescriptor: (target, prop) => {
-      const descriptor: PropertyDescriptor =  {
-        configurable: true,
-        enumerable: true,
-        get: () => target[prop as any],
-        set: (val: any) => target[prop as any] = val,
-      };
-      return descriptor;
+      if (typeof prop === 'string') {
+        const descriptor: PropertyDescriptor =  {
+          configurable: true,
+          enumerable: true,
+          get: () => target[prop as any],
+          set: (val: any) => target[prop as any] = val,
+        };
+        return descriptor;
+      }
+
+      return Reflect.getOwnPropertyDescriptor(target, prop);
     },
 
     deleteProperty: (target, prop) => {
@@ -159,7 +191,7 @@ export const StorageProxy = {
    */
   createLocalStorage<TStorageDefinitions extends JsonData = any>(
     namespace?: string,
-  ): Partial<TStorageDefinitions> {
+  ): StorageProxy<TStorageDefinitions> {
     return createProxy<TStorageDefinitions>(StorageTarget.Local, namespace);
   },
 
@@ -170,7 +202,28 @@ export const StorageProxy = {
    */
   createSessionStorage<TStorageDefinitions extends JsonData = any>(
     namespace?: string,
-  ): Partial<TStorageDefinitions> {
+  ): StorageProxy<TStorageDefinitions> {
     return createProxy<TStorageDefinitions>(StorageTarget.Session, namespace);
   },
+
+  /**
+   * Checks a cache key in `localStorage` to verify whether the cache integrity
+   * is sound. This is useful for cache-busting.
+   *
+   *
+   * @param seed - A seed to check the cache integrity with.
+   */
+  verifyCache<TStorageProxy extends StorageProxy<any>>(storageProxy: TStorageProxy, seed: string) {
+    if (!storageProxy[isStorageProxy]) throw new Error('Provided argument is not a `StorageProxy` object.')
+    const namespacedKey = getNamespacedKey(storageProxy[namespaceSymbol], 'spcache');
+    const existingSeed = window.localStorage.getItem(namespacedKey);
+    const decodedSeed = existingSeed ? atob(JSON.parse(existingSeed)) : undefined;
+
+    if (decodedSeed) {
+      return decodedSeed === seed;
+    }
+
+    window.localStorage.setItem(namespacedKey, JSON.stringify(btoa(seed)));
+    return true;
+  }
 };
