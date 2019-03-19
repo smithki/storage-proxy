@@ -8,6 +8,8 @@ import onChange from 'on-change';
 const namespaceSymbol = Symbol('namespaceSymbol');
 const isStorageProxy = Symbol('isStorageProxy');
 
+const namespaceRegex = /sp\[(.+)\]:/;
+
 /** JSON-supported primitive types. */
 export type JsonPrimitive = string | number | boolean | ArrayBuffer | null;
 
@@ -64,10 +66,19 @@ function getNamespacedKey(namespace: string | undefined, key: string) {
  *
  * @param key - Key to extract a namespace from.
  */
-function extractNamespaceFromKey(key: string) {
-  const matches = key.match(/sp\[.+\]:/g);
-  if (matches) return matches[0];
+function extractNamespaceFromKey(key: string): string | null {
+  const match = namespaceRegex.exec(key);
+  if (match) return match[1];
   return null;
+}
+
+/**
+ * Get the plain key from a namespaced key.
+ *
+ * @param key - The key to extract from.
+ */
+function extractKeyFromNamespacedKey(key: string) {
+  return key.replace(namespaceRegex, '');
 }
 
 /**
@@ -87,6 +98,7 @@ function isKeyNamespaced(key: string) {
  */
 function validateNamespace(namespace: string | undefined, key: string) {
   if (isKeyNamespaced(key)) {
+    console.log(namespace, key, extractNamespaceFromKey(key));
     if (extractNamespaceFromKey(key) === namespace) return true;
     return false;
   }
@@ -142,7 +154,7 @@ function createProxy<TStorageDefinitions extends JsonData>(
     set: (target, prop, value) => {
       if (typeof prop === 'string') {
         const namespacedKey = getNamespacedKey(namespace, prop);
-        if (typeof value === 'undefined') delete target[prop as any];
+        if (typeof value === 'undefined') window[storageTarget].removeItem(namespacedKey);
         else window[storageTarget].setItem(namespacedKey, JSON.stringify(value));
       }
 
@@ -152,7 +164,7 @@ function createProxy<TStorageDefinitions extends JsonData>(
     ownKeys: target => {
       return getStorageKeys(storageTarget).filter(
         key => validateNamespace(namespace, key),
-      );
+      ).map(key => extractKeyFromNamespacedKey(key));
     },
 
     getOwnPropertyDescriptor: (target, prop) => {
