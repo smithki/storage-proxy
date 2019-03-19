@@ -69,15 +69,7 @@ function createProxy<TStorageDefinitions extends JsonData>(
   storageTarget: StorageTarget,
   namespace?: string,
 ): TStorageDefinitions {
-  const initialData: TStorageDefinitions = {
-    *[Symbol.iterator]() {
-      for (const key of getStorageKeys(storageTarget)) {
-        if (validateNamespace(namespace, key)) {
-          yield this[key];
-        }
-      }
-    },
-  } as any;
+  const initialData: TStorageDefinitions = {} as any;
 
   // Return a proxy object
   return new Proxy(initialData, {
