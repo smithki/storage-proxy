@@ -41,7 +41,7 @@ myLocalStorage.bar = { baz: 'This works!' };
 myLocalStorage.bar.spam = 'This works too!';
 ```
 
-In TypeScript, you can pass an interface as a [generic](https://www.typescriptlang.org/docs/handbook/generics.html) type parameter to the factory function:
+In TypeScript, you can pass an interface as a [generic type parameter](https://www.typescriptlang.org/docs/handbook/generics.html) to the factory function:
 
 ```ts
 const myStorage = StorageProxy.createLocalStorage<{
