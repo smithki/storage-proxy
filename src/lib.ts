@@ -238,5 +238,18 @@ export const StorageProxy = {
 
     window.localStorage.setItem(namespacedKey, JSON.stringify(btoa(seed)));
     return true;
+  },
+
+  /**
+   * Clear the given web storage proxy object from `localStorage` or
+   * `sessionStorage`. Only keys under the namespace indicated by the
+   * `StorageProxy` object are removed from the web storage caches.
+   *
+   * @param storageProxy -
+   */
+  clearStorage<TStorageProxy extends StorageProxy<any>>(storageProxy: TStorageProxy) {
+    for (const key of Object.keys(storageProxy)) {
+      delete storageProxy[key];
+    }
   }
 };
