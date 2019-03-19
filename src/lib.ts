@@ -98,7 +98,6 @@ function isKeyNamespaced(key: string) {
  */
 function validateNamespace(namespace: string | undefined, key: string) {
   if (isKeyNamespaced(key)) {
-    console.log(namespace, key, extractNamespaceFromKey(key));
     if (extractNamespaceFromKey(key) === namespace) return true;
     return false;
   }
