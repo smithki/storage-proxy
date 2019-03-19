@@ -10,17 +10,6 @@ const isStorageProxy = Symbol('isStorageProxy');
 
 const namespaceRegex = /^\[(.+)\]:/;
 
-/** JSON-supported primitive types. */
-export type JsonPrimitive = string | number | boolean | ArrayBuffer | null;
-
-/** JSON-supported array types. */
-export type JsonArray = (JsonPrimitive | JsonData)[];
-
-/** JSON-supported object interface. */
-export interface JsonData {
-  [key: string]: JsonPrimitive | JsonArray | JsonData | undefined;
-}
-
 /** Web storage targets: `localStorage` and `sessionStorage`. */
 export enum StorageTarget {
   Local = 'localStorage',
@@ -28,7 +17,7 @@ export enum StorageTarget {
 }
 
 /** The object type created by `StorageProxy.createLocalStorage()` and `StorageProxy.createSessionStorage()`. */
-export type StorageProxy<TStorageDefinitions extends JsonData> = Partial<TStorageDefinitions> & {
+export type StorageProxy<TStorageDefinitions> = Partial<TStorageDefinitions> & {
   [namespaceSymbol]: string | undefined;
   [isStorageProxy]: true;
 };
@@ -112,7 +101,7 @@ function validateNamespace(namespace: string | undefined, key: string) {
  * @param storageTarget - Target `localStorage` or `sessionStorage` with the proxy.
  * @param namespace - An optional namespace to use.
  */
-function createProxy<TStorageDefinitions extends JsonData>(
+function createProxy<TStorageDefinitions extends any>(
   storageTarget: StorageTarget,
   namespace?: string,
 ): StorageProxy<TStorageDefinitions> {
@@ -203,7 +192,7 @@ export const StorageProxy = {
    *
    * @param namespace - An optional namespace to prefix `localStorage` keys with.
    */
-  createLocalStorage<TStorageDefinitions extends JsonData = any>(
+  createLocalStorage<TStorageDefinitions extends any>(
     namespace?: string,
   ): StorageProxy<TStorageDefinitions> {
     return createProxy<TStorageDefinitions>(StorageTarget.Local, namespace);
@@ -214,7 +203,7 @@ export const StorageProxy = {
    *
    * @param namespace - An optional namespace to prefix `sessionStorage` keys with.
    */
-  createSessionStorage<TStorageDefinitions extends JsonData = any>(
+  createSessionStorage<TStorageDefinitions extends any>(
     namespace?: string,
   ): StorageProxy<TStorageDefinitions> {
     return createProxy<TStorageDefinitions>(StorageTarget.Session, namespace);

@@ -3,7 +3,7 @@
 import './mocks/browser';
 
 import { Expect, SetupFixture, Test, TestFixture, FocusTest } from 'alsatian';
-import { JsonData, StorageProxy } from '../../src/lib';
+import { StorageProxy } from '../../src/lib';
 
 // -------------------------------------------------------------------------- //
 
@@ -12,12 +12,12 @@ const testKey2 = 'baz';
 const testStr = 'hello world';
 const testObj = { monty: 'python', numbers: [1, 2, 3] };
 
-interface TestStorageNs extends JsonData {
+interface TestStorageNs {
   bar: string;
   test: number;
 }
 
-interface TestStorage extends JsonData {
+interface TestStorage {
   baz: typeof testObj;
   test: string;
 }
