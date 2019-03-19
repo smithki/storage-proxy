@@ -1,6 +1,6 @@
 {
   "name": "storage-proxy",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Use web storage (localStorage/sessionStorage) just like plain objects using ES6 Proxies.",
   "author": "Ian K Smith <smithki707@gmail.com>",
   "license": "MIT",
