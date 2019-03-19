@@ -50,7 +50,7 @@ function getStorageKeys(storageTarget: StorageTarget) {
 }
 
 /**
- * Create an optionally-namespaced, `localStorage`-compatible key.
+ * Create an optionally-namespaced, storage-compatible key.
  *
  * @param namespace - An optional namespace to use.
  * @param key - A key to identify the `localStorage` data.
@@ -250,5 +250,15 @@ export const StorageProxy = {
     for (const key of Object.keys(storageProxy)) {
       delete storageProxy[key];
     }
+  },
+
+  /**
+   * Create an namespaced, storage-compatible key.
+   *
+   * @param namespace - A namespace to use.
+   * @param key - A key to identify the `localStorage` data.
+   */
+  getNamespacedKey(namespace: string, key: string) {
+    return getNamespacedKey(namespace, key);
   }
 };
