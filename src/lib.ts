@@ -9,7 +9,7 @@ export type JsonPrimitive = string | number | boolean | ArrayBuffer | null;
 export type JsonArray = (JsonPrimitive | JsonData)[];
 
 export interface JsonData {
-  [key: string]: JsonPrimitive | JsonArray | JsonData;
+  [key: string]: JsonPrimitive | JsonArray | JsonData | undefined;
 }
 
 export enum StorageTarget {
@@ -148,7 +148,7 @@ export const StorageProxy = {
    */
   createLocalStorage<TStorageDefinitions extends JsonData = any>(
     namespace?: string,
-  ): TStorageDefinitions {
+  ): Partial<TStorageDefinitions> {
     return createProxy<TStorageDefinitions>(StorageTarget.Local, namespace);
   },
 
@@ -159,7 +159,7 @@ export const StorageProxy = {
    */
   createSessionStorage<TStorageDefinitions extends JsonData = any>(
     namespace?: string,
-  ): TStorageDefinitions {
+  ): Partial<TStorageDefinitions> {
     return createProxy<TStorageDefinitions>(StorageTarget.Session, namespace);
   },
 };
