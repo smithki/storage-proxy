@@ -80,7 +80,7 @@ function isKeyNamespaced(key: string) {
 }
 
 /**
- * Check is the given key is valid for the given namespace.
+ * Checks if the given key is valid for the given namespace.
  *
  * @param namespace - The namespace to check against.
  * @param key - The key to check.
