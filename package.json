@@ -32,7 +32,7 @@
     "test:compile": "tsc -p ./test",
     "test:run": "alsatian ./test/dist/**/*.spec.js",
     "lint": "tslint --fix -p .",
-    "release": "PACKAGE_VERSION=$(node -pe \"require('./package.json')['version']\") && git tag $PACKAGE_VERSION && git push origin $PACKAGE_VERSION"
+    "release": "PACKAGE_VERSION=$(node -pe \"require('./package.json')['version']\") && git tag v$PACKAGE_VERSION && git push origin v$PACKAGE_VERSION"
   },
   "devDependencies": {
     "@ikscodes/tslint-config": "^5.3.1",
