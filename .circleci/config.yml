@@ -138,3 +138,6 @@ workflows:
       - publish-release-to-github:
           requires:
             - release
+          filters:
+            tags:
+              only: *semver-regex
