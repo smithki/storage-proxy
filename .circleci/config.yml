@@ -1,0 +1,126 @@
+version: 2.1
+
+aliases:
+  - &workspace-root
+    /home/circleci/project
+
+  - &attach-workspace
+    attach_workspace:
+      at: *workspace-root
+
+  - &dependency-cache-key
+    v1-dependency-cache-{{ checksum "yarn.lock" }}
+
+  - &dependency-paths
+    paths:
+      - node_modules
+
+  - &dist-paths
+    paths:
+      - dist
+
+executors:
+  default:
+    docker:
+      - image: circleci/node:10-browsers
+  github:
+    docker:
+      - image: cibuilds/github:0.10
+
+jobs:
+  install-dependencies:
+    executor: default
+    steps:
+      - checkout
+      - *attach-workspace
+      - restore_cache:
+          key: *dependency-cache-key
+      - run:
+          name: Install App Dependencies
+          command: yarn install --frozen-lockfile
+      - save_cache:
+          <<: *dependency-paths
+          key: *dependency-cache-key
+      - persist_to_workspace:
+          <<: *dependency-paths
+          root: *workspace-root
+
+  lint:
+    executor: default
+    steps:
+      - checkout
+      - *attach-workspace
+      - run:
+          name: Lint TypeScripts
+          command: yarn lint
+
+  build:
+    executor: default
+    steps:
+      - checkout
+      - *attach-workspace
+      - run:
+          name: Build modules
+          command: yarn build
+      - persist_to_workspace:
+          <<: *dist-paths
+          root: *workspace-root
+
+  test:
+    executor: default
+    steps:
+      - checkout
+      - *attach-workspace
+      - run:
+          name: Run tests
+          command: yarn test
+
+  release:
+    executor: default
+    steps:
+      - checkout
+      - *attach-workspace
+      - run:
+          name: Authenticate with registry
+          command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
+      - run:
+          name: Publish packages to NPM
+          command: npm publish
+
+  publish-release-to-github:
+    executor: github
+    steps:
+      - checkout
+      - *attach_workspace
+      - run:
+          name: Install github-release-notes package
+          command: npm install github-release-notes -g
+      - run: zip -r $CIRCLE_ARTIFACTS/$PROJECT_NAME-$CIRCLE_TAG.zip dist/*
+      - git config user.name $CIRCLE_PROJECT_USERNAME
+      - gren --override --data-source=commits
+
+workflows:
+  version: 2.1
+  default:
+    jobs:
+      - install-dependencies
+
+      - lint:
+          requires:
+            - install-dependencies
+
+      - build:
+          requires:
+            - lint
+
+      - test:
+          requires:
+            - lint
+
+      - release:
+          requires:
+            - build
+            - test
+          filters:
+            branches:
+              only: master
