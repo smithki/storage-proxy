@@ -99,7 +99,7 @@ jobs:
     executor: default
     steps:
       - checkout
-      - *attach_workspace
+      - *attach-workspace
       - run:
           name: Install github-release-notes package
           command: yarn global add github-release-notes
