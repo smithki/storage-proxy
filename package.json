@@ -31,7 +31,7 @@
     "test": "npm-run-all -s clean:test-dist test:*",
     "test:compile": "tsc -p ./test",
     "test:run": "alsatian ./test/dist/**/*.spec.js",
-    "prepublishOnly": "npm run build"
+    "lint": "tslint --fix -p ."
   },
   "devDependencies": {
     "@ikscodes/tslint-config": "^5.3.1",
