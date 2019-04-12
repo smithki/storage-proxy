@@ -116,7 +116,7 @@ jobs:
       - *attach-workspace
       - run:
           name: Install github-release-notes package
-          command: yarn global add github-release-notes
+          command: yarn add github-release-notes
       - run:
           name: Create a release and publish to GitHub
           command: gren --override --token $GITHUB_REPO_TOKEN
