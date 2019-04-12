@@ -140,6 +140,8 @@ workflows:
           filters:
             tags:
               only: *semver-regex
+            branches:
+              ignore: /.*/
 
       - publish-release-to-github:
           requires:
