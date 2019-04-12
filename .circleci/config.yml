@@ -30,7 +30,7 @@ aliases:
   - &filter-any-tag
     filters:
       tags:
-        ignore: /.*/
+        only: /.*/
 
 executors:
   default:
