@@ -145,22 +145,27 @@ workflows:
       - install-dependencies: *filter-tagged
 
       - lint:
+          <<: *filter-tagged
           requires:
             - install-dependencies
 
       - build:
+          <<: *filter-tagged
           requires:
             - lint
 
       - test:
+          <<: *filter-tagged
           requires:
             - lint
 
       - release:
+          <<: *filter-tagged
           requires:
             - build
             - test
 
       - publish-release-to-github:
+          <<: *filter-tagged
           requires:
             - release
