@@ -31,6 +31,8 @@ aliases:
     filters:
       tags:
         only: *semver-regex
+      branches:
+        ignore: /.*/
 
   - &filter-untagged
     filters:
