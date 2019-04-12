@@ -1,3 +1,8 @@
+# Environment variables required in CircleCI:
+#
+#         $NPM_TOKEN -- NPM publishing auth token.
+# $GITHUB_REPO_TOKEN -- GitHub repo-scoped auth token (for use with GREN).
+
 version: 2.1
 
 aliases:
@@ -18,6 +23,9 @@ aliases:
   - &dist-paths
     paths:
       - dist
+
+  - &semver-regex # https://rgxdb.com/r/40OZ1HN5
+    /(?<=^[Vv]|^)(?:(?<major>(?:0|[1-9](?:(?:0|[1-9])+)*))[.](?<minor>(?:0|[1-9](?:(?:0|[1-9])+)*))[.](?<patch>(?:0|[1-9](?:(?:0|[1-9])+)*))(?:-(?<prerelease>(?:(?:(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?|(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?)|(?:0|[1-9](?:(?:0|[1-9])+)*))(?:[.](?:(?:(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?|(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?)|(?:0|[1-9](?:(?:0|[1-9])+)*)))*))?(?:[+](?<build>(?:(?:(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?|(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?)|(?:(?:0|[1-9])+))(?:[.](?:(?:(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?|(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?)|(?:(?:0|[1-9])+)))*))?)$/
 
 executors:
   default:
@@ -88,16 +96,16 @@ jobs:
           command: npm publish
 
   publish-release-to-github:
-    executor: github
+    executor: default
     steps:
       - checkout
       - *attach_workspace
       - run:
           name: Install github-release-notes package
-          command: npm install github-release-notes -g
-      - run: zip -r $CIRCLE_ARTIFACTS/$PROJECT_NAME-$CIRCLE_TAG.zip dist/*
-      - git config user.name $CIRCLE_PROJECT_USERNAME
-      - gren --override --data-source=commits
+          command: yarn global add github-release-notes
+      - run:
+          name: Create a release and publish to GitHub
+          command: gren --override --token $GITHUB_REPO_TOKEN
 
 workflows:
   version: 2.1
@@ -124,3 +132,9 @@ workflows:
           filters:
             branches:
               only: master
+            tags:
+              only: *semver-regex
+
+      - publish-release-to-github:
+          requires:
+            - release
