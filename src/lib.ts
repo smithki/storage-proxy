@@ -22,6 +22,11 @@ export type StorageProxy<TStorageDefinitions> = Partial<TStorageDefinitions> & {
   [isStorageProxy]: true;
 };
 
+// Cache the proxies created by `onChange`. This prevents duplication of work in
+// the `StorageProxy` object and prevents an issue where proxies would compete
+// for access to web storage.
+const onChangeProxyCache: Map<string, any> = new Map();
+
 // --- Utilities ------------------------------------------------------------ //
 
 /**
@@ -121,17 +126,22 @@ function createProxy<TStorageDefinitions extends any>(
           const parsedData = JSON.parse(data);
 
           if (typeof parsedData === 'object') {
-            const proxyData = onChange(parsedData, () => {
-              const freshData = window[storageTarget].getItem(namespacedKey);
-              if (freshData) {
-                const freshParsedData = JSON.parse(freshData);
+            // If we've already build a proxy, return the cached object.
+            if (onChangeProxyCache.has(namespacedKey)) {
+              return onChangeProxyCache.get(namespacedKey);
+            }
 
-                window[storageTarget].setItem(
-                  namespacedKey,
-                  JSON.stringify(freshParsedData),
-                );
-              }
+            // Build a proxy with `onChange` to deeply observe object changes.
+            const proxyData = onChange(parsedData, () => {
+              window[storageTarget].setItem(
+                namespacedKey,
+                JSON.stringify(proxyData),
+              );
             });
+
+            // Save the proxied data for future reference.
+            onChangeProxyCache.set(namespacedKey, proxyData);
+
             return proxyData;
           }
 
@@ -151,6 +161,11 @@ function createProxy<TStorageDefinitions extends any>(
           window[storageTarget].removeItem(namespacedKey);
         } else {
           window[storageTarget].setItem(namespacedKey, JSON.stringify(value));
+        }
+
+        // Reset the cached proxy for this key, if exists.
+        if (onChangeProxyCache.has(namespacedKey)) {
+          onChangeProxyCache.delete(namespacedKey);
         }
       }
 
@@ -181,6 +196,11 @@ function createProxy<TStorageDefinitions extends any>(
       if (typeof prop === 'string') {
         const namespacedKey = getNamespacedKey(namespace, prop);
         window[storageTarget].removeItem(namespacedKey);
+
+        // Reset the cached proxy for this key, if exists.
+        if (onChangeProxyCache.has(namespacedKey)) {
+          onChangeProxyCache.delete(namespacedKey);
+        }
       }
 
       return Reflect.deleteProperty(target, prop);
