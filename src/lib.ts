@@ -122,10 +122,15 @@ function createProxy<TStorageDefinitions extends any>(
 
           if (typeof parsedData === 'object') {
             const proxyData = onChange(parsedData, () => {
-              window[storageTarget].setItem(
-                namespacedKey,
-                JSON.stringify(proxyData),
-              );
+              const freshData = window[storageTarget].getItem(namespacedKey)
+              if (freshData) {
+                const freshParsedData = JSON.parse(freshData);
+
+                window[storageTarget].setItem(
+                  namespacedKey,
+                  JSON.stringify(freshParsedData),
+                );
+              }
             });
             return proxyData;
           }
