@@ -5,6 +5,8 @@
 
 version: 2.1
 
+# --- Alias anchor definitions ----------------------------------------------- #
+
 aliases:
   - &workspace-root
     /home/circleci/project
@@ -41,6 +43,8 @@ aliases:
       branches:
         only: /.*/
 
+# --- Executor definitions --------------------------------------------------- #
+
 executors:
   default:
     docker:
@@ -49,7 +53,11 @@ executors:
     docker:
       - image: cibuilds/github:0.10
 
+# --- Job definitions -------------------------------------------------------- #
+
 jobs:
+  # Installs Node dependencies via Yarn, caches them, then persists to the
+  # workspace.
   install-dependencies:
     executor: default
     steps:
@@ -67,6 +75,7 @@ jobs:
           <<: *dependency-paths
           root: *workspace-root
 
+  # Runs the linter (tslint) on relevant source files.
   lint:
     executor: default
     steps:
@@ -76,6 +85,7 @@ jobs:
           name: Lint TypeScripts
           command: yarn lint
 
+  # Builds modules and persists the build output to the workspace.
   build:
     executor: default
     steps:
@@ -88,6 +98,7 @@ jobs:
           <<: *dist-paths
           root: *workspace-root
 
+  # Run unit tests.
   test:
     executor: default
     steps:
@@ -97,6 +108,7 @@ jobs:
           name: Run tests
           command: yarn test
 
+  # Publish the package to NPM. This should depend on the `build` job.
   release:
     executor: default
     steps:
@@ -109,6 +121,7 @@ jobs:
           name: Publish packages to NPM
           command: npm publish
 
+  # Create release notes on GitHub.
   publish-release-to-github:
     executor: default
     steps:
@@ -121,25 +134,33 @@ jobs:
           name: Create a release and publish to GitHub
           command: gren --override --token $GITHUB_REPO_TOKEN
 
+# --- Workflow definitions --------------------------------------------------- #
+# This configuration is optimized for continuous delivery of NPM packages.
+
 workflows:
   version: 2.1
 
+  # Builds, lints, and tests pushed code.
   pull-request:
     jobs:
       - install-dependencies: *filter-untagged
 
       - lint:
+          <<: *filter-untagged
           requires:
             - install-dependencies
 
       - build:
+          <<: *filter-untagged
           requires:
             - lint
 
       - test:
+          <<: *filter-untagged
           requires:
             - lint
 
+  # Builds, lints, and tests, and publishes semver-tagged code to NPM.
   publish-to-npm:
     jobs:
       - install-dependencies: *filter-tagged
