@@ -122,7 +122,7 @@ function createProxy<TStorageDefinitions extends any>(
 
           if (typeof parsedData === 'object') {
             const proxyData = onChange(parsedData, () => {
-              const freshData = window[storageTarget].getItem(namespacedKey)
+              const freshData = window[storageTarget].getItem(namespacedKey);
               if (freshData) {
                 const freshParsedData = JSON.parse(freshData);
 
@@ -147,26 +147,29 @@ function createProxy<TStorageDefinitions extends any>(
     set: (target, prop, value) => {
       if (typeof prop === 'string') {
         const namespacedKey = getNamespacedKey(namespace, prop);
-        if (typeof value === 'undefined') window[storageTarget].removeItem(namespacedKey);
-        else window[storageTarget].setItem(namespacedKey, JSON.stringify(value));
+        if (typeof value === 'undefined') {
+          window[storageTarget].removeItem(namespacedKey);
+        } else {
+          window[storageTarget].setItem(namespacedKey, JSON.stringify(value));
+        }
       }
 
       return Reflect.set(target, prop, value);
     },
 
     ownKeys: target => {
-      return getStorageKeys(storageTarget).filter(
-        key => validateNamespace(namespace, key),
-      ).map(key => extractKeyFromNamespacedKey(key));
+      return getStorageKeys(storageTarget)
+        .filter(key => validateNamespace(namespace, key))
+        .map(key => extractKeyFromNamespacedKey(key));
     },
 
     getOwnPropertyDescriptor: (target, prop) => {
       if (typeof prop === 'string') {
-        const descriptor: PropertyDescriptor =  {
+        const descriptor: PropertyDescriptor = {
           configurable: true,
           enumerable: true,
           get: () => target[prop as any],
-          set: (val: any) => target[prop as any] = val,
+          set: (val: any) => (target[prop as any] = val),
         };
         return descriptor;
       }
@@ -221,12 +224,21 @@ export const StorageProxy = {
    * @param storageProxy - The storage proxy object to verify.
    * @param seed - A seed to check the cache integrity with.
    */
-  verifyCache<TStorageProxy extends StorageProxy<any>>(storageProxy: TStorageProxy, seed: string) {
-    if (!storageProxy[isStorageProxy]) throw new Error('Provided argument is not a `StorageProxy` object.')
-    const namespacedKey = getNamespacedKey(storageProxy[namespaceSymbol], 'storageProxyIntegrity');
+  verifyCache<TStorageProxy extends StorageProxy<any>>(
+    storageProxy: TStorageProxy,
+    seed: string,
+  ) {
+    if (!storageProxy[isStorageProxy]) {
+      throw new Error('Provided argument is not a `StorageProxy` object.');
+    }
+    const namespacedKey = getNamespacedKey(
+      storageProxy[namespaceSymbol],
+      'storageProxyIntegrity',
+    );
     const existingSeed = window.localStorage.getItem(namespacedKey);
-    const decodedSeed = existingSeed ? atob(JSON.parse(existingSeed)) : undefined;
-
+    const decodedSeed = existingSeed
+      ? atob(JSON.parse(existingSeed))
+      : undefined;
 
     if (decodedSeed) {
       return decodedSeed === seed;
@@ -243,7 +255,9 @@ export const StorageProxy = {
    *
    * @param storageProxy - The storage proxy object to clear.
    */
-  clearStorage<TStorageProxy extends StorageProxy<any>>(storageProxy: TStorageProxy) {
+  clearStorage<TStorageProxy extends StorageProxy<any>>(
+    storageProxy: TStorageProxy,
+  ) {
     for (const key of Object.keys(storageProxy)) {
       delete storageProxy[key];
     }
@@ -257,5 +271,5 @@ export const StorageProxy = {
    */
   getNamespacedKey(namespace: string, key: string) {
     return getNamespacedKey(namespace, key);
-  }
+  },
 };
