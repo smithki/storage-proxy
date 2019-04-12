@@ -1,6 +1,6 @@
 {
   "name": "storage-proxy",
-  "version": "0.9.3",
+  "version": "0.9.4",
   "description": "Use web storage (localStorage/sessionStorage) just like plain objects using ES6 Proxies.",
   "author": "Ian K Smith <smithki707@gmail.com>",
   "license": "MIT",
@@ -32,6 +32,7 @@
     "test:compile": "tsc -p ./test",
     "test:run": "alsatian ./test/dist/**/*.spec.js",
     "lint": "tslint --fix -p .",
+    "prepublishOnly": "npm run build",
     "release": "PACKAGE_VERSION=$(node -pe \"require('./package.json')['version']\") && git tag v$PACKAGE_VERSION && git push origin v$PACKAGE_VERSION"
   },
   "devDependencies": {
