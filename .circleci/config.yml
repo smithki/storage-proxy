@@ -32,26 +32,20 @@ aliases:
   - &semver-canary-regex
     /^v\d+\.\d+\.\d+-.+$/
 
-  - &tagged-for-release
+  - &filter-ignore-release-branches
     filters:
-      tags:
-        only: *semver-regex
       branches:
-        ignore: /.*/
+        ignore: /^master$|^next$/
 
-  - &tagged-for-canary-release
+  - &filter-release-branches-only
     filters:
-      tags:
-        only: *semver-regex
       branches:
-        ignore: /.*/
+        only: master
 
-  - &untagged
+  - &filter-release-canary-branches-only
     filters:
-      tags:
-        ignore: /.*/
       branches:
-        only: /.*/
+        only: next
 
 # --- Executor definitions --------------------------------------------------- #
 
@@ -145,16 +139,22 @@ jobs:
           name: Publish pre-release package to NPM
           command: npm publish --tag next
 
-  # In case the `release` or `release-canary` jobs fail, this will remove the
-  # problematic tag from the remote repository.
-  unrelease:
+  # Create a git tag for this release and push to the remote repository.
+  tag-release:
     executor: default
     steps:
       - checkout
       - *attach-workspace
       - run:
-          name: Delete git tag '$CIRCLE_TAG'
-          command: git push -q --delete https://$GITHUB_REPO_TOKEN@github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git $CIRCLE_TAG
+          name: Git tag the release with the `package.json` version number
+          command: |
+            PACKAGE_VERSION=$(node -pe "require('./package.json')['version']")
+            git tag v$PACKAGE_VERSION
+      - run:
+          name: Push git tag to the remote repository
+          command: |
+            PACKAGE_VERSION=$(node -pe "require('./package.json')['version']")
+            git push -q https://$GITHUB_REPO_TOKEN@github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git v$PACKAGE_VERSION
 
   # Create release notes on GitHub using the `github-release-notes` package.
   generate-release-notes:
@@ -178,20 +178,17 @@ workflows:
   # Builds modules, verifies code with the linter, and runs unit tests.
   pull-request:
     jobs:
-      - install-dependencies: *untagged
+      - install-dependencies: *filter-ignore-release-branches
 
       - lint:
-          <<: *untagged
           requires:
             - install-dependencies
 
       - build:
-          <<: *untagged
           requires:
             - lint
 
       - test:
-          <<: *untagged
           requires:
             - lint
 
@@ -199,31 +196,30 @@ workflows:
   # publishes the built package to NPM.
   publish-to-npm:
     jobs:
-      - install-dependencies: *tagged-for-release
+      - install-dependencies: *filter-release-branches-only
 
       - lint:
-          <<: *tagged-for-release
           requires:
             - install-dependencies
 
       - build:
-          <<: *tagged-for-release
           requires:
             - lint
 
       - test:
-          <<: *tagged-for-release
           requires:
             - lint
 
       - release:
-          <<: *tagged-for-release
           requires:
             - build
             - test
 
+      - tag-release:
+          requires:
+            - release
+
       - generate-release-notes:
-          <<: *tagged-for-release
           requires:
             - release
 
@@ -231,30 +227,29 @@ workflows:
   # publishes a pre-release version of the built package to NPM.
   publish-canary-to-npm:
     jobs:
-      - install-dependencies: *tagged-for-canary-release
+      - install-dependencies: *filter-release-canary-branches-only
 
       - lint:
-          <<: *tagged-for-canary-release
           requires:
             - install-dependencies
 
       - build:
-          <<: *tagged-for-canary-release
           requires:
             - lint
 
       - test:
-          <<: *tagged-for-canary-release
           requires:
             - lint
 
       - release-canary:
-          <<: *tagged-for-canary-release
           requires:
             - build
             - test
 
+      - tag-release:
+          requires:
+            - release-canary
+
       - generate-release-notes:
-          <<: *tagged-for-canary-release
           requires:
             - release-canary
