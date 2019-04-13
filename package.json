@@ -25,16 +25,17 @@
     "clean:dist": "rimraf dist",
     "clean:test-dist": "rimraf test/dist",
     "clean:cache": "rimraf .rts2_cache_*",
-    "test-watch": "npm-run-all -s test:compile -p test-watch:*",
-    "test-watch:compile": "tsc -w -p ./test",
-    "test-watch:run": "chokidar \"./test/dist/**/*.spec.js\" -c \"npm run test:run\" --initial \"npm run test:run\"",
+    "test_watch": "npm-run-all -s test:compile -p test_watch:*",
+    "test_watch:compile": "tsc -w -p ./test",
+    "test_watch:run": "chokidar \"./test/dist/**/*.spec.js\" -c \"npm run test:run\" --initial \"npm run test:run\"",
     "test": "npm-run-all -s clean:test-dist test:*",
     "test:compile": "tsc -p ./test",
     "test:run": "alsatian ./test/dist/**/*.spec.js",
     "lint": "tslint --fix -p .",
-    "prepublishOnly": "npm run build",
     "release": "PACKAGE_VERSION=$(node -pe \"require('./package.json')['version']\") && git tag v$PACKAGE_VERSION && git push origin v$PACKAGE_VERSION",
-    "unrelease": "PACKAGE_VERSION=$(node -pe \"require('./package.json')['version']\") && git tag -d v$PACKAGE_VERSION && git push --delete origin v$PACKAGE_VERSION"
+    "unrelease": "PACKAGE_VERSION=$(node -pe \"require('./package.json')['version']\") && git tag -d v$PACKAGE_VERSION && git push --delete origin v$PACKAGE_VERSION",
+    "release_canary": "PACKAGE_VERSION=$(node -pe \"require('./package.json')['version']\") && git tag v$PACKAGE_VERSION && git push origin v$PACKAGE_VERSION",
+    "unrelease_canary": "PACKAGE_VERSION=$(node -pe \"require('./package.json')['version']\") && git tag -d v$PACKAGE_VERSION && git push --delete origin v$PACKAGE_VERSION"
   },
   "devDependencies": {
     "@ikscodes/tslint-config": "^5.3.1",

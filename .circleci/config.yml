@@ -22,21 +22,31 @@ aliases:
     paths:
       - node_modules
 
-  - &dist-paths
+  - &build-output-paths
     paths:
       - dist
 
   - &semver-regex
     /^v\d+\.\d+\.\d+$/
 
-  - &filter-tagged
+  - &semver-canary-regex
+    /^v\d+\.\d+\.\d+-.+$/
+
+  - &tagged-for-release
     filters:
       tags:
         only: *semver-regex
       branches:
         ignore: /.*/
 
-  - &filter-untagged
+  - &tagged-for-canary-release
+    filters:
+      tags:
+        only: *semver-regex
+      branches:
+        ignore: /.*/
+
+  - &untagged
     filters:
       tags:
         ignore: /.*/
@@ -95,7 +105,7 @@ jobs:
           name: Build modules
           command: yarn build
       - persist_to_workspace:
-          <<: *dist-paths
+          <<: *build-output-paths
           root: *workspace-root
 
   # Run unit tests.
@@ -118,11 +128,36 @@ jobs:
           name: Authenticate with registry
           command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
       - run:
-          name: Publish packages to NPM
+          name: Publish package to NPM
           command: npm publish
 
-  # Create release notes on GitHub.
-  publish-release-to-github:
+  # Publish the package as a pre-release version to NPM. This should depend on
+  # the `build` job.
+  release-canary:
+    executor: default
+    steps:
+      - checkout
+      - *attach-workspace
+      - run:
+          name: Authenticate with registry
+          command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
+      - run:
+          name: Publish pre-release package to NPM
+          command: npm publish --tag next
+
+  # In case the `release` or `release-canary` jobs fail, this will remove the
+  # problematic tag from the remote repository.
+  unrelease:
+    executor: default
+    steps:
+      - checkout
+      - *attach-workspace
+      - run:
+          name: Delete git tag '$CIRCLE_TAG'
+          command: git push -q --delete https://$GITHUB_REPO_TOKEN@github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git $CIRCLE_TAG
+
+  # Create release notes on GitHub using the `github-release-notes` package.
+  generate-release-notes:
     executor: default
     steps:
       - checkout
@@ -131,7 +166,7 @@ jobs:
           name: Install github-release-notes package
           command: yarn add github-release-notes
       - run:
-          name: Create a release and publish to GitHub
+          name: Generate release notes and publish to GitHub
           command: npx gren release --override --token $GITHUB_REPO_TOKEN
 
 # --- Workflow definitions --------------------------------------------------- #
@@ -140,53 +175,86 @@ jobs:
 workflows:
   version: 2.1
 
-  # Builds, lints, and tests pushed code.
+  # Builds modules, verifies code with the linter, and runs unit tests.
   pull-request:
     jobs:
-      - install-dependencies: *filter-untagged
+      - install-dependencies: *untagged
 
       - lint:
-          <<: *filter-untagged
+          <<: *untagged
           requires:
             - install-dependencies
 
       - build:
-          <<: *filter-untagged
+          <<: *untagged
           requires:
             - lint
 
       - test:
-          <<: *filter-untagged
+          <<: *untagged
           requires:
             - lint
 
-  # Builds, lints, and tests, and publishes semver-tagged code to NPM.
+  # Builds modules, verifies code with the linter, runs unit tests, and
+  # publishes the built package to NPM.
   publish-to-npm:
     jobs:
-      - install-dependencies: *filter-tagged
+      - install-dependencies: *tagged-for-release
 
       - lint:
-          <<: *filter-tagged
+          <<: *tagged-for-release
           requires:
             - install-dependencies
 
       - build:
-          <<: *filter-tagged
+          <<: *tagged-for-release
           requires:
             - lint
 
       - test:
-          <<: *filter-tagged
+          <<: *tagged-for-release
           requires:
             - lint
 
       - release:
-          <<: *filter-tagged
+          <<: *tagged-for-release
           requires:
             - build
             - test
 
-      - publish-release-to-github:
-          <<: *filter-tagged
+      - generate-release-notes:
+          <<: *tagged-for-release
           requires:
             - release
+
+  # Builds modules, verifies code with the linter, runs unit tests, and
+  # publishes a pre-release version of the built package to NPM.
+  publish-canary-to-npm:
+    jobs:
+      - install-dependencies: *tagged-for-canary-release
+
+      - lint:
+          <<: *tagged-for-canary-release
+          requires:
+            - install-dependencies
+
+      - build:
+          <<: *tagged-for-canary-release
+          requires:
+            - lint
+
+      - test:
+          <<: *tagged-for-canary-release
+          requires:
+            - lint
+
+      - release-canary:
+          <<: *tagged-for-canary-release
+          requires:
+            - build
+            - test
+
+      - generate-release-notes:
+          <<: *tagged-for-canary-release
+          requires:
+            - release-canary
