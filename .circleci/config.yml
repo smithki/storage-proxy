@@ -221,7 +221,7 @@ workflows:
 
       - generate-release-notes:
           requires:
-            - release
+            - tag-release
 
   # Builds modules, verifies code with the linter, runs unit tests, and
   # publishes a pre-release version of the built package to NPM.
@@ -252,4 +252,4 @@ workflows:
 
       - generate-release-notes:
           requires:
-            - release-canary
+            - tag-release
