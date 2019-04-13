@@ -80,7 +80,7 @@ function createProxy<TStorageDefinitions extends any>(
 
   return new Proxy(proxyData, {
     get: (target, prop, receiver) => {
-      if (prop in (storageProxyMetadata as any)) return storageProxyMetadata[prop];
+      if (prop in storageProxyMetadata) return storageProxyMetadata[prop] as any;
       if (typeof proxyData[prop as any] === 'undefined') return null;
       return proxyData[prop as any];
     },
