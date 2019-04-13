@@ -33,7 +33,8 @@
     "test:run": "alsatian ./test/dist/**/*.spec.js",
     "lint": "tslint --fix -p .",
     "prepublishOnly": "npm run build",
-    "release": "PACKAGE_VERSION=$(node -pe \"require('./package.json')['version']\") && git tag v$PACKAGE_VERSION && git push origin v$PACKAGE_VERSION"
+    "release": "PACKAGE_VERSION=$(node -pe \"require('./package.json')['version']\") && git tag v$PACKAGE_VERSION && git push origin v$PACKAGE_VERSION",
+    "unrelease": "PACKAGE_VERSION=$(node -pe \"require('./package.json')['version']\") && git tag -d v$PACKAGE_VERSION && git push --delete origin v$PACKAGE_VERSION"
   },
   "devDependencies": {
     "@ikscodes/tslint-config": "^5.3.1",
