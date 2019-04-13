@@ -1,6 +1,15 @@
 {
   "extends": "@ikscodes/tslint-config",
   "rules": {
-    "function-name": false
+    "function-name": false,
+    "prettier": [true, {
+      "printWidth": 120,
+      "tabWidth": 2,
+      "semi": true,
+      "singleQuote": true,
+      "trailingComma": "all",
+      "bracketSpacing": true,
+      "jsxBracketSameLine": true
+    }]
   }
 }
