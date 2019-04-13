@@ -1,7 +1,15 @@
-# Environment variables required in CircleCI:
-#
-#         $NPM_TOKEN -- NPM publishing auth token.
-# $GITHUB_REPO_TOKEN -- GitHub repo-scoped auth token (for use with GREN).
+# ---------------------------------------------------------------------------- #
+# Environment variables required in CircleCI:                                  #
+#                                                                              #
+#           $NPM_TOKEN -- NPM publishing auth token.                           #
+#   $GITHUB_REPO_TOKEN -- GitHub repo-scoped auth token (for use with GREN).   #
+# ---------------------------------------------------------------------------- #
+# The following branches should be created & protected on GitHub:              #
+#                                            ^^^^^^^^^                         #
+#        master -- Production code (currently published NPM version).          #
+#          next -- Pre-release code (published under the `next` tag on NPM).   #
+#   development -- Work-in-progress code (not published).                      #
+# ---------------------------------------------------------------------------- #
 
 version: 2.1
 
@@ -26,13 +34,7 @@ aliases:
     paths:
       - dist
 
-  - &semver-regex
-    /^v\d+\.\d+\.\d+$/
-
-  - &semver-canary-regex
-    /^v\d+\.\d+\.\d+-.+$/
-
-  - &filter-ignore-release-branches
+  - &filter-default-branches
     filters:
       branches:
         ignore: /^master$|^next$/
@@ -42,7 +44,7 @@ aliases:
       branches:
         only: master
 
-  - &filter-release-canary-branches-only
+  - &filter-prerelease-branches-only
     filters:
       branches:
         only: next
@@ -53,9 +55,6 @@ executors:
   default:
     docker:
       - image: circleci/node:10-browsers
-  github:
-    docker:
-      - image: cibuilds/github:0.10
 
 # --- Job definitions -------------------------------------------------------- #
 
@@ -113,7 +112,7 @@ jobs:
           command: yarn test
 
   # Publish the package to NPM. This should depend on the `build` job.
-  release:
+  create-release:
     executor: default
     steps:
       - checkout
@@ -127,7 +126,7 @@ jobs:
 
   # Publish the package as a pre-release version to NPM. This should depend on
   # the `build` job.
-  release-canary:
+  create-prerelease:
     executor: default
     steps:
       - checkout
@@ -157,7 +156,7 @@ jobs:
             git push -q https://$GITHUB_REPO_TOKEN@github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git v$PACKAGE_VERSION
 
   # Create release notes on GitHub using the `github-release-notes` package.
-  generate-release-notes:
+  create-release-notes:
     executor: default
     steps:
       - checkout
@@ -169,6 +168,20 @@ jobs:
           name: Generate release notes and publish to GitHub
           command: npx gren release --override --token $GITHUB_REPO_TOKEN
 
+  # Create release notes for a prerelease version on GitHub using the
+  # `github-release-notes` package.
+  create-prerelease-notes:
+    executor: default
+    steps:
+      - checkout
+      - *attach-workspace
+      - run:
+          name: Install github-release-notes package
+          command: yarn add github-release-notes
+      - run:
+          name: Generate release notes and publish to GitHub
+          command: npx gren release --override --prerelease --token $GITHUB_REPO_TOKEN
+
 # --- Workflow definitions --------------------------------------------------- #
 # This configuration is optimized for continuous delivery of NPM packages.
 
@@ -178,7 +191,7 @@ workflows:
   # Builds modules, verifies code with the linter, and runs unit tests.
   pull-request:
     jobs:
-      - install-dependencies: *filter-ignore-release-branches
+      - install-dependencies: *filter-default-branches
 
       - lint:
           requires:
@@ -210,16 +223,16 @@ workflows:
           requires:
             - lint
 
-      - release:
+      - create-release:
           requires:
             - build
             - test
 
       - tag-release:
           requires:
-            - release
+            - create-release
 
-      - generate-release-notes:
+      - create-release-notes:
           requires:
             - tag-release
 
@@ -227,7 +240,7 @@ workflows:
   # publishes a pre-release version of the built package to NPM.
   publish-canary-to-npm:
     jobs:
-      - install-dependencies: *filter-release-canary-branches-only
+      - install-dependencies: *filter-prerelease-branches-only
 
       - lint:
           requires:
@@ -241,15 +254,15 @@ workflows:
           requires:
             - lint
 
-      - release-canary:
+      - create-prerelease:
           requires:
             - build
             - test
 
       - tag-release:
           requires:
-            - release-canary
+            - create-prerelease
 
-      - generate-release-notes:
+      - create-prerelease-notes:
           requires:
             - tag-release
