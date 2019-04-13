@@ -1,15 +1,31 @@
 # ---------------------------------------------------------------------------- #
-# Environment variables required in CircleCI:                                  #
+#                              SETUP INSTRUCTIONS                              #
+# ---------------------------------------------------------------------------- #
 #                                                                              #
-#           $NPM_TOKEN -- NPM publishing auth token.                           #
-#   $GITHUB_REPO_TOKEN -- GitHub repo-scoped auth token (for use with GREN).   #
+#  1. Environment variables required in CircleCI:                              #
+#                                                                              #
+#            $NPM_TOKEN -- NPM publishing auth token.                          #
+#    $GITHUB_REPO_TOKEN -- GitHub repo-scoped auth token (for use with GREN).  #
+#                                                                              #
 # ---------------------------------------------------------------------------- #
-# The following branches should be created & protected on GitHub:              #
-#                                            ^^^^^^^^^                         #
-#        master -- Production code (currently published NPM version).          #
-#          next -- Pre-release code (published under the `next` tag on NPM).   #
-#   development -- Work-in-progress code (not published).                      #
+#                                                                              #
+#  2. The following branches should be created & protected on GitHub:          #
+#                                                ^^^^^^^^^                     #
+#         master -- Production code (currently published NPM version).         #
+#           next -- Pre-release code (published under the `next` tag on NPM).  #
+#    development -- Work-in-progress code (not published). This should be set  #
+#                   as the default branch!                                     #
+#                                                                              #
 # ---------------------------------------------------------------------------- #
+#                                                                              #
+#  3. The following scripts should be created in `package.json`:               #
+#                                                                              #
+#     lint -- Run a linter against source files.                               #
+#    build -- Build output required for publishing to NPM.                     #
+#     test -- Run unit tests.                                                  #
+#                                                                              #
+# ---------------------------------------------------------------------------- #
+
 
 version: 2.1
 
@@ -223,17 +239,24 @@ workflows:
           requires:
             - lint
 
-      - create-release:
+      - confirm-release:
+          type: approval
           requires:
             - build
             - test
 
+      - create-release:
+          requires:
+            - confirm-release
+
       - tag-release:
           requires:
+            - confirm-release
             - create-release
 
       - create-release-notes:
           requires:
+            - confirm-release
             - tag-release
 
   # Builds modules, verifies code with the linter, runs unit tests, and
@@ -254,15 +277,22 @@ workflows:
           requires:
             - lint
 
-      - create-prerelease:
+      - confirm-prerelease:
+          type: approval
           requires:
             - build
             - test
 
+      - create-prerelease:
+          requires:
+            - confirm-prerelease
+
       - tag-release:
           requires:
+            - confirm-prerelease
             - create-prerelease
 
       - create-prerelease-notes:
           requires:
+            - confirm-prerelease
             - tag-release
