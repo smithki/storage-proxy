@@ -1,14 +1,19 @@
 # ---------------------------------------------------------------------------- #
-# Environment variables required in CircleCI:                                  #
 #                                                                              #
-#           $NPM_TOKEN -- NPM publishing auth token.                           #
-#   $GITHUB_REPO_TOKEN -- GitHub repo-scoped auth token (for use with GREN).   #
+#  Environment variables required in CircleCI:                                 #
+#                                                                              #
+#            $NPM_TOKEN -- NPM publishing auth token.                          #
+#    $GITHUB_REPO_TOKEN -- GitHub repo-scoped auth token (for use with GREN).  #
+#                                                                              #
 # ---------------------------------------------------------------------------- #
-# The following branches should be created & protected on GitHub:              #
-#                                            ^^^^^^^^^                         #
-#        master -- Production code (currently published NPM version).          #
-#          next -- Pre-release code (published under the `next` tag on NPM).   #
-#   development -- Work-in-progress code (not published).                      #
+#                                                                              #
+#  The following branches should be created & protected on GitHub:             #
+#                                             ^^^^^^^^^                        #
+#         master -- Production code (currently published NPM version).         #
+#           next -- Pre-release code (published under the `next` tag on NPM).  #
+#    development -- Work-in-progress code (not published). This should be set  #
+#                   as the default branch!                                     #
+#                                                                              #
 # ---------------------------------------------------------------------------- #
 
 version: 2.1
