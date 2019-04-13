@@ -26,12 +26,6 @@ aliases:
     paths:
       - dist
 
-  - &semver-regex
-    /^v\d+\.\d+\.\d+$/
-
-  - &semver-canary-regex
-    /^v\d+\.\d+\.\d+-.+$/
-
   - &filter-ignore-release-branches
     filters:
       branches:
