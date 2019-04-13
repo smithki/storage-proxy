@@ -132,7 +132,7 @@ jobs:
           command: yarn add github-release-notes
       - run:
           name: Create a release and publish to GitHub
-          command: npx gren --override --token $GITHUB_REPO_TOKEN
+          command: npx gren release --override --token $GITHUB_REPO_TOKEN
 
 # --- Workflow definitions --------------------------------------------------- #
 # This configuration is optimized for continuous delivery of NPM packages.
