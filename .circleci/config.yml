@@ -239,17 +239,24 @@ workflows:
           requires:
             - lint
 
-      - create-release:
+      - confirm-release:
+          type: approval
           requires:
             - build
             - test
 
+      - create-release:
+          requires:
+            - confirm-release
+
       - tag-release:
           requires:
+            - confirm-release
             - create-release
 
       - create-release-notes:
           requires:
+            - confirm-release
             - tag-release
 
   # Builds modules, verifies code with the linter, runs unit tests, and
@@ -270,15 +277,22 @@ workflows:
           requires:
             - lint
 
-      - create-prerelease:
+      - confirm-prerelease:
+          type: approval
           requires:
             - build
             - test
 
+      - create-prerelease:
+          requires:
+            - confirm-prerelease
+
       - tag-release:
           requires:
+            - confirm-prerelease
             - create-prerelease
 
       - create-prerelease-notes:
           requires:
+            - confirm-prerelease
             - tag-release
