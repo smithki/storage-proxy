@@ -66,13 +66,12 @@ function createProxy<TStorageDefinitions extends any>(
 
   initDataStorage(namespace, storageTarget);
 
-  const storageProxyMetadata = {
+  const data = {
+    ...getDataFromStorage(namespace, storageTarget),
     [namespaceSymbol]: namespace,
     [isStorageProxy]: true,
     [storageTargetSymbol]: storageTarget,
   };
-
-  const data = getDataFromStorage(namespace, storageTarget);
   const proxyData = onChange(data, (path, value, prevValue) => {
     if (value === prevValue) return;
     window[storageTarget].setItem(namespace, JSON.stringify(proxyData));
@@ -80,7 +79,6 @@ function createProxy<TStorageDefinitions extends any>(
 
   return new Proxy(proxyData, {
     get: (target, prop, receiver) => {
-      if (prop in storageProxyMetadata) return (storageProxyMetadata as any)[prop];
       if (typeof proxyData[prop as any] === 'undefined') return null;
       return proxyData[prop as any];
     },
