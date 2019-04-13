@@ -3,48 +3,64 @@
 import './mocks/browser';
 
 import { Expect, SetupFixture, Test, TestFixture } from 'alsatian';
-import { StorageProxy } from '../../src/lib';
+import { StorageProxy, StorageTarget } from '../../src/lib';
 
 // -------------------------------------------------------------------------- //
 
-const testKey1 = '[foo]:bar';
-const testKey2 = 'baz';
+const testNamespace = 'qwerty';
 const testStr = 'hello world';
 const testObj = { monty: 'python', numbers: [1, 2, 3] };
 
-interface TestStorageNs {
+interface TestStorage {
   bar: string;
-  test: number;
+  baz: typeof testObj;
+  fizz: number;
+}
+
+function getItem(storageTarget: StorageTarget, path: string) {
+  const data = window[storageTarget].getItem(testNamespace);
+
+  if (data) {
+    const parsedData = JSON.parse(data);
+    const parts = path.split('.');
+    let result = parsedData;
+
+    parts.forEach(p => {
+      result = result[p];
+    });
+
+    return result;
+  }
+
+  return {};
 }
 
 @TestFixture('StorageProxy Tests')
 export class StorageProxyTestFixture {
-  lStore: Partial<TestStorageNs>;
-  sStore: Partial<TestStorageNs>;
+  lStore: Partial<TestStorage>;
+  sStore: Partial<TestStorage>;
 
   @SetupFixture
   public setupFixture() {
-    localStorage.setItem(testKey1, JSON.stringify(testStr));
-    localStorage.setItem(testKey2, JSON.stringify(testObj));
-    sessionStorage.setItem(testKey1, JSON.stringify(testStr));
-    sessionStorage.setItem(testKey2, JSON.stringify(testObj));
+    localStorage.setItem(testNamespace, JSON.stringify({ bar: testStr, test: 999, baz: testObj }));
+    sessionStorage.setItem(testNamespace, JSON.stringify({ bar: testStr, test: 999, baz: testObj }));
 
-    this.lStore = StorageProxy.createLocalStorage<TestStorageNs>('foo');
-    this.sStore = StorageProxy.createSessionStorage<TestStorageNs>('foo');
+    this.lStore = StorageProxy.createLocalStorage<TestStorage>(testNamespace);
+    this.sStore = StorageProxy.createSessionStorage<TestStorage>(testNamespace);
   }
 
   @Test('Set a namespaced `localStorage` key')
   public setNamespacedLocalStorageKeyTest() {
-    this.lStore.test = 123;
+    this.lStore.fizz = 123;
 
-    Expect(JSON.parse(localStorage.getItem('[foo]:test')!)).toEqual(123);
+    Expect(getItem(StorageTarget.Local, 'fizz')).toEqual(123);
   }
 
   @Test('Set a namespaced `sessionStorage` key')
   public setNamespacedSessionStorageKeyTest() {
-    this.sStore.test = 123;
+    this.sStore.fizz = 123;
 
-    Expect(JSON.parse(sessionStorage.getItem('[foo]:test')!)).toEqual(123);
+    Expect(getItem(StorageTarget.Session, 'fizz')).toEqual(123);
   }
 
   @Test('Get namespaced `localStorage` key')
