@@ -28,7 +28,6 @@ npm install storage-proxy
 ```ts
 import { StorageProxy } from 'storage-proxy';
 
-// Optionally use a namespace to prefix storage keys like `[{namespace}]:{key}`.
 const myLocalStorage = StorageProxy.createLocalStorage('my-namespace');
 const mySessionStorage = StorageProxy.createSessionStorage('my-namespace');
 
