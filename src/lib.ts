@@ -61,6 +61,7 @@ function getDataFromStorage(namespace: string, storageTarget: StorageTarget) {
 function createProxy<TStorageDefinitions extends any>(
   storageTarget: StorageTarget,
   namespace: string,
+  defaults?: Partial<TStorageDefinitions>,
 ): StorageProxy<TStorageDefinitions> {
   if (!namespace) throw new Error('[storage-proxy] Namespace cannot be an empty `string`, `undefined`, or `null`.');
 
@@ -77,12 +78,20 @@ function createProxy<TStorageDefinitions extends any>(
     window[storageTarget].setItem(namespace, JSON.stringify(proxyData));
   });
 
-  return new Proxy(proxyData, {
+  const storageProxy = new Proxy(proxyData, {
     get: (target, prop, receiver) => {
       if (typeof proxyData[prop as any] === 'undefined') return null;
       return proxyData[prop as any];
     },
   });
+
+  if (defaults) {
+    for (const [key, value] of Object.entries(defaults)) {
+      storageProxy[key] = value;
+    }
+  }
+
+  return storageProxy;
 }
 
 // --- Proxy factory -------------------------------------------------------- //
@@ -99,8 +108,11 @@ export const StorageProxy = {
    *
    * @return a `StorageProxy` object targeting `localStorage`.
    */
-  createLocalStorage<TStorageDefinitions extends any>(namespace: string): StorageProxy<TStorageDefinitions> {
-    return createProxy<TStorageDefinitions>(StorageTarget.Local, namespace);
+  createLocalStorage<TStorageDefinitions extends any>(
+    namespace: string,
+    defaults?: Partial<TStorageDefinitions>,
+  ): StorageProxy<TStorageDefinitions> {
+    return createProxy<TStorageDefinitions>(StorageTarget.Local, namespace, defaults);
   },
 
   /**
@@ -110,8 +122,11 @@ export const StorageProxy = {
    *
    * @return a `StorageProxy` object targeting `sessionStorage`.
    */
-  createSessionStorage<TStorageDefinitions extends any>(namespace: string): StorageProxy<TStorageDefinitions> {
-    return createProxy<TStorageDefinitions>(StorageTarget.Session, namespace);
+  createSessionStorage<TStorageDefinitions extends any>(
+    namespace: string,
+    defaults?: Partial<TStorageDefinitions>,
+  ): StorageProxy<TStorageDefinitions> {
+    return createProxy<TStorageDefinitions>(StorageTarget.Session, namespace, defaults);
   },
 
   /**
