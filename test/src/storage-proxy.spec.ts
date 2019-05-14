@@ -15,6 +15,9 @@ interface TestStorage {
   bar: string;
   baz: typeof testObj;
   fizz: number;
+  defaults: {
+    example: string;
+  };
 }
 
 function getItem(storageTarget: StorageTarget, path: string) {
@@ -45,32 +48,44 @@ export class StorageProxyTestFixture {
     localStorage.setItem(testNamespace, JSON.stringify({ bar: testStr, test: 999, baz: testObj }));
     sessionStorage.setItem(testNamespace, JSON.stringify({ bar: testStr, test: 999, baz: testObj }));
 
-    this.lStore = StorageProxy.createLocalStorage<TestStorage>(testNamespace);
+    this.lStore = StorageProxy.createLocalStorage<TestStorage>(testNamespace, {
+      defaults: { example: testStr },
+    });
     this.sStore = StorageProxy.createSessionStorage<TestStorage>(testNamespace);
   }
 
-  @Test('Set a namespaced `localStorage` key')
-  public setNamespacedLocalStorageKeyTest() {
+  @Test('Sets default items in storage')
+  public defaultsMergeTest() {
+    Expect(getItem(StorageTarget.Local, 'defaults.example')).toEqual(testStr);
+  }
+
+  @Test('Defaults are available on the `StorageProxy` object')
+  public defaultsAreGettableTest() {
+    Expect(this.lStore.defaults!.example).toEqual(testStr);
+  }
+
+  @Test('Set a `localStorage` key')
+  public setLocalStorageKeyTest() {
     this.lStore.fizz = 123;
 
     Expect(getItem(StorageTarget.Local, 'fizz')).toEqual(123);
   }
 
-  @Test('Set a namespaced `sessionStorage` key')
-  public setNamespacedSessionStorageKeyTest() {
+  @Test('Set a `sessionStorage` key')
+  public setSessionStorageKeyTest() {
     this.sStore.fizz = 123;
 
     Expect(getItem(StorageTarget.Session, 'fizz')).toEqual(123);
   }
 
-  @Test('Get namespaced `localStorage` key')
-  public getNamespacedLocalStorageKeyTest() {
+  @Test('Get `localStorage` key')
+  public getLocalStorageKeyTest() {
     const data = this.lStore.bar;
     Expect(data).toEqual(testStr);
   }
 
-  @Test('Get namespaced `sessionStorage` key')
-  public getNamespacedSessionStorageKeyTest() {
+  @Test('Get `sessionStorage` key')
+  public getSessionStorageKeyTest() {
     const data = this.sStore.bar;
     Expect(data).toEqual(testStr);
   }
