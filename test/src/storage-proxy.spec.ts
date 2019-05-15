@@ -18,6 +18,7 @@ interface TestStorage {
   defaults: {
     example: string;
   };
+  alreadySetDefault: number;
 }
 
 function getItem(storageTarget: StorageTarget, path: string) {
@@ -45,11 +46,15 @@ export class StorageProxyTestFixture {
 
   @SetupFixture
   public setupFixture() {
-    localStorage.setItem(testNamespace, JSON.stringify({ bar: testStr, test: 999, baz: testObj }));
+    localStorage.setItem(
+      testNamespace,
+      JSON.stringify({ bar: testStr, test: 999, baz: testObj, alreadySetDefault: 999 }),
+    );
     sessionStorage.setItem(testNamespace, JSON.stringify({ bar: testStr, test: 999, baz: testObj }));
 
     this.lStore = StorageProxy.createLocalStorage<TestStorage>(testNamespace, {
       defaults: { example: testStr },
+      alreadySetDefault: 123,
     });
     this.sStore = StorageProxy.createSessionStorage<TestStorage>(testNamespace);
   }
@@ -62,6 +67,11 @@ export class StorageProxyTestFixture {
   @Test('Defaults are available on the `StorageProxy` object')
   public defaultsAreGettableTest() {
     Expect(this.lStore.defaults!.example).toEqual(testStr);
+  }
+
+  @Test('Default key that is already set in storage is not overwritten')
+  public defaultsNotAllPowerfulTest() {
+    Expect(this.lStore.alreadySetDefault).toEqual(999);
   }
 
   @Test('Set a `localStorage` key')
