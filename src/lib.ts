@@ -87,7 +87,9 @@ function createProxy<TStorageDefinitions extends any>(
 
   if (defaults) {
     for (const [key, value] of Object.entries(defaults)) {
-      storageProxy[key] = value;
+      if (!data[key]) {
+        storageProxy[key] = value;
+      }
     }
   }
 
