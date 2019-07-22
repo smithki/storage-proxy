@@ -106,7 +106,8 @@ export const StorageProxy = {
   /**
    * Creates a `localStorage` proxy object that can be used like a plain JS object.
    *
-   * @param namespace - An optional namespace to prefix `localStorage` keys with.
+   * @param namespace - A namespace to prefix `localStorage` keys with.
+   * @param defaults - Optional default values for this `StorageProxy` object.
    *
    * @return a `StorageProxy` object targeting `localStorage`.
    */
@@ -120,7 +121,8 @@ export const StorageProxy = {
   /**
    * Creates a `sessionStorage` proxy object that can be used like a plain JS object.
    *
-   * @param namespace - An optional namespace to prefix `sessionStorage` keys with.
+   * @param namespace - A namespace to prefix `sessionStorage` keys with.
+   * @param defaults - Optional default values for this `StorageProxy` object.
    *
    * @return a `StorageProxy` object targeting `sessionStorage`.
    */
