@@ -25,11 +25,14 @@ export type StorageProxy<TStorageDefinitions> = Partial<TStorageDefinitions> & {
 // --- Utilities ------------------------------------------------------------ //
 
 /**
- * Determines if the passed value is defined
- * @param value The value to check
+ * Checks if the passed value is undefined.
+ *
+ * @param value - The value to check.
+ *
+ * @return Returns true if value is undefined, else false.
  */
-export function isDefined<T>(value: T | undefined | null): value is T {
-  return <T> value !== undefined && <T> value !== null;
+export function isUndefined(value: any): value is undefined {
+  return value === undefined;
 }
 
 /**
@@ -95,7 +98,7 @@ function createProxy<TStorageDefinitions extends any>(
 
   if (defaults) {
     for (const [key, value] of Object.entries(defaults)) {
-      if (!isDefined(data[key])) {
+      if (isUndefined(data[key])) {
         storageProxy[key] = value;
       }
     }
