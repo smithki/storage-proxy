@@ -41,7 +41,21 @@ myLocalStorage.bar.spam = 'This works too!';
 const copied = { ...myLocalStorage };
 ```
 
-In TypeScript, you can pass an interface as a [generic type parameter](https://www.typescriptlang.org/docs/handbook/generics.html) to the factory function:
+Additionally, you can pass default values. This is handy if your stored data contains deep objects that need to be accessible even when the contained data is `undefined`:
+
+```ts
+const myLocalStorage = StorageProxy.createLocalStorage('my-namespace', {
+  one: {
+    two: 'three',
+    four: {},
+  },
+});
+
+console.log(myLocalStorage.one.two.three)        // => "three"
+myLocalStorage.one.two.three.four.five = 'six';  // Works!
+```
+
+In TypeScript, you can define the shape of your stored data by passing a [generic type parameter](https://www.typescriptlang.org/docs/handbook/generics.html) to the factory function:
 
 ```ts
 const myStorage = StorageProxy.createLocalStorage<{
@@ -49,4 +63,8 @@ const myStorage = StorageProxy.createLocalStorage<{
   foo: number[];
   bar: { baz: string, spam?: string };
 }>('my-namespace');
+
+myStorage.foo      // Works!
+myStorage.bar.baz  // Works!
+myStorage.yolo     // Compiler error!
 ```
