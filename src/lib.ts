@@ -25,6 +25,14 @@ export type StorageProxy<TStorageDefinitions> = Partial<TStorageDefinitions> & {
 // --- Utilities ------------------------------------------------------------ //
 
 /**
+ * Determines if the passed value is defined
+ * @param value The value to check
+ */
+export function isDefined<T>(value: T | undefined | null): value is T {
+  return <T> value !== undefined && <T> value !== null;
+}
+
+/**
  * Initializes the web storage interface. If no storage exists, we save an empty
  * object.
  *
@@ -73,13 +81,13 @@ function createProxy<TStorageDefinitions extends any>(
     [isStorageProxy]: true,
     [storageTargetSymbol]: storageTarget,
   };
-  const proxyData = onChange(data, (path, value, prevValue) => {
+  const proxyData = onChange(data, (_path, value, prevValue) => {
     if (value === prevValue) return;
     window[storageTarget].setItem(namespace, JSON.stringify(proxyData));
   });
 
   const storageProxy = new Proxy(proxyData, {
-    get: (target, prop, receiver) => {
+    get: (_target, prop, _receiver) => {
       if (typeof proxyData[prop as any] === 'undefined') return null;
       return proxyData[prop as any];
     },
@@ -87,7 +95,7 @@ function createProxy<TStorageDefinitions extends any>(
 
   if (defaults) {
     for (const [key, value] of Object.entries(defaults)) {
-      if (!data[key]) {
+      if (!isDefined(data[key])) {
         storageProxy[key] = value;
       }
     }
