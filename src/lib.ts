@@ -20,6 +20,7 @@ export type StorageProxy<TStorageDefinitions> = Partial<TStorageDefinitions> & {
   readonly [namespaceSymbol]: string;
   readonly [isStorageProxy]: true;
   readonly [storageTargetSymbol]: StorageTarget;
+  [storageProxyIntegrityKey]: string;
 };
 
 // --- Utilities ------------------------------------------------------------ //
