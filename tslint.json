@@ -9,7 +9,7 @@
       "singleQuote": true,
       "trailingComma": "all",
       "bracketSpacing": true,
-      "jsxBracketSameLine": true
+      "jsxBracketSameLine": true,
       "variable-name": {
         "options": [
           "allow-leading-underscore"
