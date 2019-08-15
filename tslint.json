@@ -10,11 +10,7 @@
       "trailingComma": "all",
       "bracketSpacing": true,
       "jsxBracketSameLine": true,
-      "variable-name": {
-        "options": [
-          "allow-leading-underscore"
-        ]
-      }
+      "variable-name": false,
     }]
   }
 }
