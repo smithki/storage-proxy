@@ -12,6 +12,8 @@ const testStr = 'hello world';
 const testObj = { monty: 'python', numbers: [1, 2, 3] };
 const testArr = [1, 2, 3];
 
+const storageProxyIntegrityKey = '__storageProxyIntegrity';
+
 interface TestStorage {
   bar: string;
   baz: typeof testObj;
@@ -43,8 +45,8 @@ function getItem(storageTarget: StorageTarget, path: string) {
 
 @TestFixture('StorageProxy Tests')
 export class StorageProxyTestFixture {
-  lStore: Partial<TestStorage>;
-  sStore: Partial<TestStorage>;
+  lStore: StorageProxy<TestStorage>;
+  sStore: StorageProxy<TestStorage>;
 
   @SetupFixture
   public setupFixture() {
@@ -79,6 +81,12 @@ export class StorageProxyTestFixture {
     Expect(this.lStore.alreadySetDefault).toEqual(999);
   }
 
+  @Test('Restoring defaults privelages default values over `WebStorage` values.')
+  public restoreDefaultsTest() {
+    StorageProxy.restoreDefaults(this.lStore);
+    Expect(this.lStore.alreadySetDefault).toEqual(123);
+  }
+
   @Test('Set `localStorage` key')
   public setLocalStorageKeyTest() {
     this.lStore.fizz = 123;
@@ -103,6 +111,21 @@ export class StorageProxyTestFixture {
   public getSessionStorageKeyTest() {
     const data = this.sStore.bar;
     Expect(data).toEqual(testStr);
+  }
+
+  @Test('Verify caching helper works')
+  public verifyCacheTest() {
+    Expect(getItem(StorageTarget.Local, storageProxyIntegrityKey)).not.toBeDefined();
+
+    const shouldBeTrue = StorageProxy.verifyCache(this.lStore, 'very seedy');
+    Expect(getItem(StorageTarget.Local, storageProxyIntegrityKey)).toBeDefined();
+    Expect(shouldBeTrue).toBeTruthy();
+
+    const shouldAlsoBeTrue = StorageProxy.verifyCache(this.lStore, 'very seedy');
+    Expect(shouldAlsoBeTrue).toBeTruthy();
+
+    const shouldBeFalse = StorageProxy.verifyCache(this.lStore, 'even seedier');
+    Expect(shouldBeFalse).not.toBeTruthy();
   }
 
   @Test('Validate `Array.prototype.push`')
@@ -173,5 +196,24 @@ export class StorageProxyTestFixture {
     Expect(dataTwo).toEqual(expected);
     Expect(getItem(StorageTarget.Local, 'baz.numbers')).toEqual(expected);
     Expect(getItem(StorageTarget.Local, 'arrayValue')).toEqual(expected);
+  }
+
+  @Test('Clearing `StorageProxy` removes all keys from both `WebStorage` and the local object')
+  public clearStorageTest() {
+    StorageProxy.clearStorage(this.lStore);
+
+    Expect(this.lStore.alreadySetDefault).toBeNull();
+    Expect(this.lStore.arrayValue).toBeNull();
+    Expect(this.lStore.bar).toBeNull();
+    Expect(this.lStore.baz).toBeNull();
+    Expect(this.lStore.defaults).toBeNull();
+    Expect(this.lStore.fizz).toBeNull();
+
+    Expect(getItem(StorageTarget.Local, 'alreadySetDefault')).not.toBeDefined();
+    Expect(getItem(StorageTarget.Local, 'arrayValue')).not.toBeDefined();
+    Expect(getItem(StorageTarget.Local, 'bar')).not.toBeDefined();
+    Expect(getItem(StorageTarget.Local, 'baz')).not.toBeDefined();
+    Expect(getItem(StorageTarget.Local, 'defaults')).not.toBeDefined();
+    Expect(getItem(StorageTarget.Local, 'fizz')).not.toBeDefined();
   }
 }
