@@ -10,6 +10,7 @@ import { StorageProxy, StorageTarget } from '../../src/lib';
 const testNamespace = 'qwerty';
 const testStr = 'hello world';
 const testObj = { monty: 'python', numbers: [1, 2, 3] };
+const testArr = [1, 2, 3];
 
 interface TestStorage {
   bar: string;
@@ -19,6 +20,7 @@ interface TestStorage {
     example: string;
   };
   alreadySetDefault: number;
+  arrayValue: number[];
 }
 
 function getItem(storageTarget: StorageTarget, path: string) {
@@ -48,9 +50,12 @@ export class StorageProxyTestFixture {
   public setupFixture() {
     localStorage.setItem(
       testNamespace,
-      JSON.stringify({ bar: testStr, test: 999, baz: testObj, alreadySetDefault: 999 }),
+      JSON.stringify({ bar: testStr, test: 999, baz: testObj, alreadySetDefault: 999, arrayValue: testArr }),
     );
-    sessionStorage.setItem(testNamespace, JSON.stringify({ bar: testStr, test: 999, baz: testObj }));
+    sessionStorage.setItem(
+      testNamespace,
+      JSON.stringify({ bar: testStr, test: 999, baz: testObj, arrayValue: testArr }),
+    );
 
     this.lStore = StorageProxy.createLocalStorage<TestStorage>(testNamespace, {
       defaults: { example: testStr },
@@ -98,5 +103,65 @@ export class StorageProxyTestFixture {
   public getSessionStorageKeyTest() {
     const data = this.sStore.bar;
     Expect(data).toEqual(testStr);
+  }
+
+  @Test('Validate `Array.prototype.push`')
+  public arrayPushTest() {
+    this.lStore.baz!.numbers.push(4, 5, 6);
+    this.lStore.arrayValue!.push(4, 5, 6);
+    const dataOne = this.lStore.baz!.numbers;
+    const dataTwo = this.lStore.arrayValue;
+
+    const expected = [1, 2, 3, 4, 5, 6];
+    Expect(dataOne).toEqual(expected);
+    Expect(dataTwo).toEqual(expected);
+  }
+
+  @Test('Validate `Array.prototype.pop`')
+  public arrayPopTest() {
+    this.lStore.baz!.numbers.pop();
+    this.lStore.arrayValue!.pop();
+    const dataOne = this.lStore.baz!.numbers;
+    const dataTwo = this.lStore.arrayValue;
+
+    const expected = [1, 2, 3, 4, 5];
+    Expect(dataOne).toEqual(expected);
+    Expect(dataTwo).toEqual(expected);
+  }
+
+  @Test('Validate `Array.prototype.unshift`')
+  public arrayUnshiftTest() {
+    this.lStore.baz!.numbers.unshift(999);
+    this.lStore.arrayValue!.unshift(999);
+    const dataOne = this.lStore.baz!.numbers;
+    const dataTwo = this.lStore.arrayValue;
+
+    const expected = [999, 1, 2, 3, 4, 5];
+    Expect(dataOne).toEqual(expected);
+    Expect(dataTwo).toEqual(expected);
+  }
+
+  @Test('Validate `Array.prototype.shift`')
+  public arrayShiftTest() {
+    this.lStore.baz!.numbers.shift();
+    this.lStore.arrayValue!.shift();
+    const dataOne = this.lStore.baz!.numbers;
+    const dataTwo = this.lStore.arrayValue;
+
+    const expected = [1, 2, 3, 4, 5];
+    Expect(dataOne).toEqual(expected);
+    Expect(dataTwo).toEqual(expected);
+  }
+
+  @Test('Validate `Array.prototype.splice`')
+  public arraySpliceTest() {
+    this.lStore.baz!.numbers.splice(1, 2, ...[999, 998]);
+    this.lStore.arrayValue!.splice(1, 2, ...[999, 998]);
+    const dataOne = this.lStore.baz!.numbers;
+    const dataTwo = this.lStore.arrayValue;
+
+    const expected = [1, 999, 998, 4, 5];
+    Expect(dataOne).toEqual(expected);
+    Expect(dataTwo).toEqual(expected);
   }
 }
