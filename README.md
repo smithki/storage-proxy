@@ -51,8 +51,8 @@ const myLocalStorage = StorageProxy.createLocalStorage('my-namespace', {
   },
 });
 
-console.log(myLocalStorage.one.two.three)        // => "three"
-myLocalStorage.one.two.three.four.five = 'six';  // Works!
+console.log(myLocalStorage.one.two.three)  // => "three"
+myLocalStorage.one.four.five = 'six';      // Works!
 ```
 
 In TypeScript, you can define the shape of your stored data by passing a [generic type parameter](https://www.typescriptlang.org/docs/handbook/generics.html) to the factory function:
