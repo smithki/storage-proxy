@@ -79,14 +79,14 @@ export class StorageProxyTestFixture {
     Expect(this.lStore.alreadySetDefault).toEqual(999);
   }
 
-  @Test('Set a `localStorage` key')
+  @Test('Set `localStorage` key')
   public setLocalStorageKeyTest() {
     this.lStore.fizz = 123;
 
     Expect(getItem(StorageTarget.Local, 'fizz')).toEqual(123);
   }
 
-  @Test('Set a `sessionStorage` key')
+  @Test('Set `sessionStorage` key')
   public setSessionStorageKeyTest() {
     this.sStore.fizz = 123;
 
@@ -115,6 +115,8 @@ export class StorageProxyTestFixture {
     const expected = [1, 2, 3, 4, 5, 6];
     Expect(dataOne).toEqual(expected);
     Expect(dataTwo).toEqual(expected);
+    Expect(getItem(StorageTarget.Local, 'baz.numbers')).toEqual(expected);
+    Expect(getItem(StorageTarget.Local, 'arrayValue')).toEqual(expected);
   }
 
   @Test('Validate `Array.prototype.pop`')
@@ -127,6 +129,8 @@ export class StorageProxyTestFixture {
     const expected = [1, 2, 3, 4, 5];
     Expect(dataOne).toEqual(expected);
     Expect(dataTwo).toEqual(expected);
+    Expect(getItem(StorageTarget.Local, 'baz.numbers')).toEqual(expected);
+    Expect(getItem(StorageTarget.Local, 'arrayValue')).toEqual(expected);
   }
 
   @Test('Validate `Array.prototype.unshift`')
@@ -139,6 +143,8 @@ export class StorageProxyTestFixture {
     const expected = [999, 1, 2, 3, 4, 5];
     Expect(dataOne).toEqual(expected);
     Expect(dataTwo).toEqual(expected);
+    Expect(getItem(StorageTarget.Local, 'baz.numbers')).toEqual(expected);
+    Expect(getItem(StorageTarget.Local, 'arrayValue')).toEqual(expected);
   }
 
   @Test('Validate `Array.prototype.shift`')
@@ -151,6 +157,8 @@ export class StorageProxyTestFixture {
     const expected = [1, 2, 3, 4, 5];
     Expect(dataOne).toEqual(expected);
     Expect(dataTwo).toEqual(expected);
+    Expect(getItem(StorageTarget.Local, 'baz.numbers')).toEqual(expected);
+    Expect(getItem(StorageTarget.Local, 'arrayValue')).toEqual(expected);
   }
 
   @Test('Validate `Array.prototype.splice`')
@@ -163,5 +171,7 @@ export class StorageProxyTestFixture {
     const expected = [1, 999, 998, 4, 5];
     Expect(dataOne).toEqual(expected);
     Expect(dataTwo).toEqual(expected);
+    Expect(getItem(StorageTarget.Local, 'baz.numbers')).toEqual(expected);
+    Expect(getItem(StorageTarget.Local, 'arrayValue')).toEqual(expected);
   }
 }
