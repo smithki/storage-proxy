@@ -1,5 +1,8 @@
 # ---------------------------------------------------------------------------- #
-#                              SETUP INSTRUCTIONS                              #
+#                               CI INSTRUCTIONS                                #
+#                               ~~~~~~~~~~~~~~~                                #
+#   This configuration is optimized for continuous delivery of NPM packages    #
+#                          using Yarn + TypeScript.                            #
 # ---------------------------------------------------------------------------- #
 #                                                                              #
 #  1. Environment variables required in CircleCI:                              #
@@ -22,48 +25,77 @@
 #                                                                              #
 #     lint -- Run a linter against source files.                               #
 #    build -- Build output required for publishing to NPM.                     #
-#     test -- Run unit tests.                                                  #
+#     test -- Run unit/integration/e2e tests.                                  #
+#                                                                              #
+# ---------------------------------------------------------------------------- #
+#                                                                              #
+#  4. Ensure the aliases for `&dependency-paths` and `&build-output-paths`     #
+#     below properly reflect the dependency and output directories of your     #
+#     app or module.                                                           #
+#                                                                              #
+# ---------------------------------------------------------------------------- #
+#                                                                              #
+#  5. [OPTIONAL] Configure GREN to your liking using `.grenrc`.                #
+#                                                                              #
+#     See: https://github.com/github-tools/github-release-notes                #
 #                                                                              #
 # ---------------------------------------------------------------------------- #
 
-
 version: 2.1
 
-# --- Alias anchor definitions ----------------------------------------------- #
+# --- YAML Aliases ----------------------------------------------------------- #
 
-aliases:
-  - &workspace-root
-    /home/circleci/project
+aliases: [
+  # List of dependency paths that should be persisted to the
+  # CircleCI workspace.
+  &dependency-paths [
+    "node_modules"
+  ],
 
-  - &attach-workspace
-    attach_workspace:
+  # List of build output paths that should be persisted to the
+  # CircleCI workspace.
+  &build-output-paths [
+    "dist"
+  ],
+
+  # Yarn lockfile cache key (update "vN" => "vN+1" to cache-bust).
+  &dependency-cache-key "v1-dependency-cache-{{ checksum \"yarn.lock\" }}",
+
+  &workspace-root "/home/circleci/project",
+
+  &attach-workspace {
+    attach_workspace: {
       at: *workspace-root
+    }
+  },
 
-  - &dependency-cache-key
-    v1-dependency-cache-{{ checksum "yarn.lock" }}
+  # Filter pull requests not in "master" or "next" (development code)
+  &filter-default-branches {
+    filters: {
+      branches: {
+        ignore: "/^master$|^next$/"
+      }
+    }
+  },
 
-  - &dependency-paths
-    paths:
-      - node_modules
+  # Filter pull requests in "master" only (production code).
+  &filter-release-branches-only {
+    filters: {
+      branches: {
+        only: "master"
+      }
+    }
+  },
 
-  - &build-output-paths
-    paths:
-      - dist
-
-  - &filter-default-branches
-    filters:
-      branches:
-        ignore: /^master$|^next$/
-
-  - &filter-release-branches-only
-    filters:
-      branches:
-        only: master
-
-  - &filter-prerelease-branches-only
-    filters:
-      branches:
-        only: next
+  # Filter pull requests in "next" only (pre-release code).
+  &filter-prerelease-branches-only {
+    filters: {
+      branches: {
+        only: "next"
+      }
+    }
+  },
+]
 
 # --- Executor definitions --------------------------------------------------- #
 
@@ -75,8 +107,8 @@ executors:
 # --- Job definitions -------------------------------------------------------- #
 
 jobs:
-  # Installs Node dependencies via Yarn, caches them, then persists to the
-  # workspace.
+  # Installs Node dependencies via Yarn, caches them, then persists
+  # to the workspace.
   install-dependencies:
     executor: default
     steps:
@@ -85,23 +117,23 @@ jobs:
       - restore_cache:
           key: *dependency-cache-key
       - run:
-          name: Install App Dependencies
-          command: yarn install --frozen-lockfile
+          name: Install Module Dependencies
+          command: yarn install
       - save_cache:
-          <<: *dependency-paths
+          paths: *dependency-paths
           key: *dependency-cache-key
       - persist_to_workspace:
-          <<: *dependency-paths
+          paths: *dependency-paths
           root: *workspace-root
 
-  # Runs the linter (tslint) on relevant source files.
+  # Runs the linter against relevant source files.
   lint:
     executor: default
     steps:
       - checkout
       - *attach-workspace
       - run:
-          name: Lint TypeScripts
+          name: Lint source files
           command: yarn lint
 
   # Builds modules and persists the build output to the workspace.
@@ -114,10 +146,10 @@ jobs:
           name: Build modules
           command: yarn build
       - persist_to_workspace:
-          <<: *build-output-paths
+          paths: *build-output-paths
           root: *workspace-root
 
-  # Run unit tests.
+  # Run unit/integration/e2e tests.
   test:
     executor: default
     steps:
@@ -179,7 +211,7 @@ jobs:
       - *attach-workspace
       - run:
           name: Install github-release-notes package
-          command: yarn add github-release-notes
+          command: yarn add -D -W github-release-notes
       - run:
           name: Generate release notes and publish to GitHub
           command: npx gren release --override --token $GITHUB_REPO_TOKEN
@@ -193,16 +225,14 @@ jobs:
       - *attach-workspace
       - run:
           name: Install github-release-notes package
-          command: yarn add github-release-notes
+          command: yarn add -D -W github-release-notes
       - run:
           name: Generate release notes and publish to GitHub
           command: npx gren release --override --prerelease --token $GITHUB_REPO_TOKEN
 
 # --- Workflow definitions --------------------------------------------------- #
-# This configuration is optimized for continuous delivery of NPM packages.
 
 workflows:
-  version: 2.1
 
   # Builds modules, verifies code with the linter, and runs unit tests.
   pull-request:
@@ -239,6 +269,8 @@ workflows:
           requires:
             - lint
 
+        # Manual approval step as a final gatekeeper to prevent
+        # possible mistakes!
       - confirm-release:
           type: approval
           requires:
@@ -261,7 +293,7 @@ workflows:
 
   # Builds modules, verifies code with the linter, runs unit tests, and
   # publishes a pre-release version of the built package to NPM.
-  publish-canary-to-npm:
+  publish-prerelease-to-npm:
     jobs:
       - install-dependencies: *filter-prerelease-branches-only
 
@@ -277,22 +309,15 @@ workflows:
           requires:
             - lint
 
-      - confirm-prerelease:
-          type: approval
+      - create-prerelease:
           requires:
             - build
             - test
 
-      - create-prerelease:
-          requires:
-            - confirm-prerelease
-
       - tag-release:
           requires:
-            - confirm-prerelease
             - create-prerelease
 
       - create-prerelease-notes:
           requires:
-            - confirm-prerelease
             - tag-release
