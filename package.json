@@ -46,6 +46,6 @@
     "typescript": "^3.0.3"
   },
   "dependencies": {
-    "on-change": "^1.2.0"
+    "on-change": "^1.6.2"
   }
 }
