@@ -7,6 +7,7 @@ import onChange from 'on-change';
 const namespaceSymbol = Symbol('namespaceSymbol');
 const isStorageProxy = Symbol('isStorageProxy');
 const storageTargetSymbol = Symbol('storageTargetSymbol');
+const defaultValuesSymbol = Symbol('defaultValuesSymbol');
 const storageProxyIntegrityKey = '__storageProxyIntegrity';
 
 /** Web storage targets: `localStorage` and `sessionStorage`. */
@@ -20,6 +21,7 @@ export type StorageProxy<TStorageDefinitions> = Partial<TStorageDefinitions> & {
   readonly [namespaceSymbol]: string;
   readonly [isStorageProxy]: true;
   readonly [storageTargetSymbol]: StorageTarget;
+  readonly [defaultValuesSymbol]: Partial<TStorageDefinitions>;
   [storageProxyIntegrityKey]: string;
 };
 
@@ -32,8 +34,21 @@ export type StorageProxy<TStorageDefinitions> = Partial<TStorageDefinitions> & {
  *
  * @return Returns true if value is undefined, else false.
  */
-export function isUndefined(value: any): value is undefined {
+function isUndefined(value: any): value is undefined {
   return value === undefined;
+}
+
+/**
+ * Asserts that the given argument is a valid `StorageProxy` object, otherwise
+ * raising an error.
+ *
+ * @param value - Any value to test for validity as a `StorageProxy` object.
+ */
+function enforceStorageProxy(value?: any) {
+  // Argument must be a `StorageProxy` object.
+  if (!value || !value[isStorageProxy]) {
+    throw new TypeError('[storage-proxy] Supplied argument is not a `StorageProxy` object.');
+  }
 }
 
 /**
@@ -103,6 +118,8 @@ function createProxy<TStorageDefinitions extends any>(
         storageProxy[key] = value;
       }
     }
+
+    storageProxy[defaultValuesSymbol] = defaults;
   }
 
   return storageProxy;
@@ -156,10 +173,7 @@ export const StorageProxy = {
    * @return `boolean` indicating whether the cache integrity is sound.
    */
   verifyCache<TStorageProxy extends StorageProxy<any>>(storageProxy: TStorageProxy, seed: string) {
-    // Argument must be a `StorageProxy` object.
-    if (!storageProxy[isStorageProxy]) {
-      throw new Error('[storage-proxy] Provided argument is not a `StorageProxy` object.');
-    }
+    enforceStorageProxy(storageProxy);
 
     // Get a seed from the raw web storage data and decode it.
     const data = getDataFromStorage(storageProxy[namespaceSymbol], storageProxy[storageTargetSymbol]);
@@ -182,8 +196,26 @@ export const StorageProxy = {
    * @param storageProxy - The storage proxy object to clear.
    */
   clearStorage<TStorageProxy extends StorageProxy<any>>(storageProxy: TStorageProxy) {
+    enforceStorageProxy(storageProxy);
+
     for (const key of Object.keys(storageProxy)) {
       delete storageProxy[key];
+    }
+  },
+
+  /**
+   * Restores the default values given to `StorageProxy.createLocalStorage()`
+   * and `StorageProxy.createSessionStorage()`. However, unlike when the
+   * `StorageProxy` was initially created, this function privelages the default
+   * values _over_ what is currently in `WebStorage`.
+   *
+   * @param storageProxy - The storage proxy object to restore to a default state.
+   */
+  restoreDefaults<TStorageProxy extends StorageProxy<any>>(storageProxy: TStorageProxy) {
+    enforceStorageProxy(storageProxy);
+
+    for (const [key, value] of Object.entries(storageProxy[defaultValuesSymbol])) {
+      (storageProxy as any)[key] = value;
     }
   },
 };

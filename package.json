@@ -36,6 +36,7 @@
   "devDependencies": {
     "@ikscodes/tslint-config": "^5.3.1",
     "alsatian": "^2.4.0",
+    "atob": "^2.1.2",
     "btoa": "^1.2.1",
     "microbundle": "^0.8.4",
     "mock-browser": "^0.92.14",
