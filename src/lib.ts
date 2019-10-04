@@ -17,7 +17,7 @@ export enum StorageTarget {
 }
 
 /** The object type created by `StorageProxy.createLocalStorage()` and `StorageProxy.createSessionStorage()`. */
-export type StorageProxy<TStorageDefinitions> = Partial<TStorageDefinitions> & {
+export type StorageProxyObject<TStorageDefinitions> = Partial<TStorageDefinitions> & {
   readonly [namespaceSymbol]: string;
   readonly [isStorageProxy]: true;
   readonly [storageTargetSymbol]: StorageTarget;
@@ -42,10 +42,9 @@ function isUndefined(value: any): value is undefined {
  * Asserts that the given argument is a valid `StorageProxy` object, otherwise
  * raising an error.
  *
- * @param value - Any value to test for validity as a `StorageProxy` object.
+ * @param value - Any value to test for validity as a `StorageProxyObject`.
  */
 function enforceStorageProxy(value?: any) {
-  // Argument must be a `StorageProxy` object.
   if (!value || !value[isStorageProxy]) {
     throw new TypeError('[storage-proxy] Supplied argument is not a `StorageProxy` object.');
   }
@@ -55,25 +54,31 @@ function enforceStorageProxy(value?: any) {
  * Initializes the web storage interface. If no storage exists, we save an empty
  * object.
  *
- * @param namespace - The namespace of the `StorageProxy` object.
+ * @param namespace - The namespace of the `StorageProxyObject`.
  * @param storageTarget - The web storage target (`localStorage` or `sessionStorage`).
  */
 function initDataStorage(namespace: string, storageTarget: StorageTarget) {
-  const data = window[storageTarget].getItem(namespace);
-  if (!data) window[storageTarget].setItem(namespace, JSON.stringify({}));
+  if (StorageProxy.isStorageAvailable(storageTarget)) {
+    const data = window[storageTarget].getItem(namespace);
+    if (!data) window[storageTarget].setItem(namespace, JSON.stringify({}));
+  }
 }
 
 /**
  * Gets and parses data from web storage at the provided namespace.
  *
- * @param namespace - The namespace of the `StorageProxy` object.
+ * @param namespace - The namespace of the `StorageProxyObject`.
  * @param storageTarget - The web storage target (`localStorage` or `sessionStorage`).
  *
  * @return An object of arbitrary data from web storage.
  */
 function getDataFromStorage(namespace: string, storageTarget: StorageTarget) {
-  const data = window[storageTarget].getItem(namespace);
-  return !!data ? JSON.parse(data) : {};
+  if (StorageProxy.isStorageAvailable(storageTarget)) {
+    const data = window[storageTarget].getItem(namespace);
+    return !!data ? JSON.parse(data) : {};
+  }
+
+  return {};
 }
 
 /**
@@ -83,13 +88,13 @@ function getDataFromStorage(namespace: string, storageTarget: StorageTarget) {
  * @param storageTarget - Target `localStorage` or `sessionStorage` with the proxy.
  * @param namespace - An optional namespace to use.
  *
- * @return A `StorageProxy` object.
+ * @return A `StorageProxyObject` type.
  */
 function createProxy<TStorageDefinitions extends any>(
   storageTarget: StorageTarget,
   namespace: string,
   defaults?: Partial<TStorageDefinitions>,
-): StorageProxy<TStorageDefinitions> {
+): StorageProxyObject<TStorageDefinitions> {
   if (!namespace) throw new Error('[storage-proxy] Namespace cannot be an empty `string`, `undefined`, or `null`.');
 
   initDataStorage(namespace, storageTarget);
@@ -101,7 +106,7 @@ function createProxy<TStorageDefinitions extends any>(
     [storageTargetSymbol]: storageTarget,
   };
   const proxyData = onChange(data, (_path, value, prevValue) => {
-    if (value === prevValue) return;
+    if (value === prevValue || !StorageProxy.isStorageAvailable(storageTarget)) return;
     window[storageTarget].setItem(namespace, JSON.stringify(proxyData));
   });
 
@@ -136,14 +141,14 @@ export const StorageProxy = {
    * Creates a `localStorage` proxy object that can be used like a plain JS object.
    *
    * @param namespace - A namespace to prefix `localStorage` keys with.
-   * @param defaults - Optional default values for this `StorageProxy` object.
+   * @param defaults - Optional default values for this `StorageProxyObject`.
    *
-   * @return a `StorageProxy` object targeting `localStorage`.
+   * @return a `StorageProxyObject` targeting `localStorage`.
    */
   createLocalStorage<TStorageDefinitions extends any>(
     namespace: string,
     defaults?: Partial<TStorageDefinitions>,
-  ): StorageProxy<TStorageDefinitions> {
+  ): StorageProxyObject<TStorageDefinitions> {
     return createProxy<TStorageDefinitions>(StorageTarget.Local, namespace, defaults);
   },
 
@@ -151,19 +156,19 @@ export const StorageProxy = {
    * Creates a `sessionStorage` proxy object that can be used like a plain JS object.
    *
    * @param namespace - A namespace to prefix `sessionStorage` keys with.
-   * @param defaults - Optional default values for this `StorageProxy` object.
+   * @param defaults - Optional default values for this `StorageProxyObject`.
    *
-   * @return a `StorageProxy` object targeting `sessionStorage`.
+   * @return a `StorageProxyObject` targeting `sessionStorage`.
    */
   createSessionStorage<TStorageDefinitions extends any>(
     namespace: string,
     defaults?: Partial<TStorageDefinitions>,
-  ): StorageProxy<TStorageDefinitions> {
+  ): StorageProxyObject<TStorageDefinitions> {
     return createProxy<TStorageDefinitions>(StorageTarget.Session, namespace, defaults);
   },
 
   /**
-   * Checks a cache key in the given `StorageProxy` object and verifies whether
+   * Checks a cache key in the given `StorageProxyObject` and verifies whether
    * the cache integrity is sound. This is handy for cache-busting
    * `localStorage` and `sessionStorage`.
    *
@@ -172,7 +177,7 @@ export const StorageProxy = {
    *
    * @return `boolean` indicating whether the cache integrity is sound.
    */
-  verifyCache<TStorageProxy extends StorageProxy<any>>(storageProxy: TStorageProxy, seed: string) {
+  verifyCache<TStorageProxy extends StorageProxyObject<any>>(storageProxy: TStorageProxy, seed: string) {
     enforceStorageProxy(storageProxy);
 
     // Get a seed from the raw web storage data and decode it.
@@ -191,11 +196,11 @@ export const StorageProxy = {
   /**
    * Clear the given web storage proxy object from `localStorage` or
    * `sessionStorage`. Only keys under the namespace indicated by the
-   * `StorageProxy` object are removed from the web storage caches.
+   * `StorageProxyObject` are removed from the web storage caches.
    *
    * @param storageProxy - The storage proxy object to clear.
    */
-  clearStorage<TStorageProxy extends StorageProxy<any>>(storageProxy: TStorageProxy) {
+  clearStorage<TStorageProxy extends StorageProxyObject<any>>(storageProxy: TStorageProxy) {
     enforceStorageProxy(storageProxy);
 
     for (const key of Object.keys(storageProxy)) {
@@ -206,16 +211,52 @@ export const StorageProxy = {
   /**
    * Restores the default values given to `StorageProxy.createLocalStorage()`
    * and `StorageProxy.createSessionStorage()`. However, unlike when the
-   * `StorageProxy` was initially created, this function privelages the default
-   * values _over_ what is currently in `WebStorage`.
+   * `StorageProxyObject` was initially created, this function privelages the
+   * default values _over_ what is currently in `WebStorage`.
    *
    * @param storageProxy - The storage proxy object to restore to a default state.
    */
-  restoreDefaults<TStorageProxy extends StorageProxy<any>>(storageProxy: TStorageProxy) {
+  restoreDefaults<TStorageProxy extends StorageProxyObject<any>>(storageProxy: TStorageProxy) {
     enforceStorageProxy(storageProxy);
 
     for (const [key, value] of Object.entries(storageProxy[defaultValuesSymbol])) {
       (storageProxy as any)[key] = value;
+    }
+  },
+
+  /**
+   * Asserts whether the supplied `WebStorage` type is available.
+   *
+   * This implementation is based on an example from MDN (Mozilla Developer Network):
+   * https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API#Feature-detecting_localStorage
+   *
+   * @param storageTarget - The web storage target (`localStorage` or `sessionStorage`).
+   * @returns `boolean` indicating whether the specified storage is available or not.
+   */
+  isStorageAvailable(storageTarget: StorageTarget = StorageTarget.Local) {
+    const storage = window[storageTarget];
+
+    try {
+      const x = '__storage_test__';
+      storage.setItem(x, x);
+      storage.removeItem(x);
+
+      return true;
+    } catch (err) {
+      return (
+        err &&
+        // everything except Firefox
+        (err.code === 22 ||
+          // Firefox
+          err.code === 1014 ||
+          // test name field too, because code might not be present
+          // everything except Firefox
+          err.name === 'QuotaExceededError' ||
+          // Firefox
+          err.name === 'NS_ERROR_DOM_QUOTA_REACHED') &&
+        // acknowledge QuotaExceededError only if there's something already stored
+        (storage && storage.length !== 0)
+      );
     }
   },
 };
