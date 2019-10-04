@@ -3,7 +3,7 @@
 import './mocks/browser';
 
 import { Expect, SetupFixture, Test, TestFixture } from 'alsatian';
-import { StorageProxy, StorageTarget } from '../../src/lib';
+import { StorageProxy, StorageProxyObject, StorageTarget } from '../../src/lib';
 
 // -------------------------------------------------------------------------- //
 
@@ -45,8 +45,8 @@ function getItem(storageTarget: StorageTarget, path: string) {
 
 @TestFixture('StorageProxy Tests')
 export class StorageProxyTestFixture {
-  lStore: StorageProxy<TestStorage>;
-  sStore: StorageProxy<TestStorage>;
+  lStore: StorageProxyObject<TestStorage>;
+  sStore: StorageProxyObject<TestStorage>;
 
   @SetupFixture
   public setupFixture() {
