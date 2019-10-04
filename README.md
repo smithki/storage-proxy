@@ -73,18 +73,18 @@ myStorage.yolo     // Compiler error!
 
 For convenience, `StorageProxy` also provides several lightweight utilities for interacting with web storage.
 
-### `StorageProxy.verifyCache(storageProxy: StorageProxyObject, seed: string)`
+#### `StorageProxy.verifyCache(storageProxy: StorageProxyObject, seed: string)`
 
 Checks a cache key in the given `StorageProxyObject` and verifies whether the cache integrity is sound. This is handy for cache-busting `localStorage` and `sessionStorage`.
 
-### `StorageProxy.clearStorage(storageProxy: StorageProxyObject)`
+#### `StorageProxy.clearStorage(storageProxy: StorageProxyObject)`
 
 Clear the given web storage proxy object from `localStorage` or `sessionStorage`. Only keys under the namespace indicated by the `StorageProxyObject` are removed from the web storage caches.
 
-### `StorageProxy.restoreDefaults(storageProxy: StorageProxyObject)`
+#### `StorageProxy.restoreDefaults(storageProxy: StorageProxyObject)`
 
 Restores the default values given to `StorageProxy.createLocalStorage()` and `StorageProxy.createSessionStorage()`. However, unlike when the `StorageProxyObject` was initially created, this function privelages the default values _over_ what is currently in `WebStorage`.
 
-### `StorageProxy.isStorageAvailable(storageTarget?: StorageTarget)`
+#### `StorageProxy.isStorageAvailable(storageTarget?: StorageTarget)`
 
 Asserts whether the supplied `WebStorage` type is available. The `storageTarget` parameter defaults to `localStorage`. `StorageProxy` uses this utility internally to prevent raising errors in incompatible browser environments. This means you are protected from `WebStorage` permissions issues, but also counts as an important **gotcha!** It's crucial that your application works **with or without `WebStorage`**, so please try to _gracefully degrade functionality_ in such occurrences. This utility is exposed for that very purpose. Use it to your advantage!
