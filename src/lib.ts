@@ -10,6 +10,8 @@ const storageTargetSymbol = Symbol('storageTargetSymbol');
 const defaultValuesSymbol = Symbol('defaultValuesSymbol');
 const storageProxyIntegrityKey = '__storageProxyIntegrity';
 
+const isStorageAvailableCache: Map<StorageTarget, boolean> = new Map();
+
 /** Web storage targets: `localStorage` and `sessionStorage`. */
 export enum StorageTarget {
   Local = 'localStorage',
@@ -234,6 +236,15 @@ export const StorageProxy = {
    * @returns `boolean` indicating whether the specified storage is available or not.
    */
   isStorageAvailable(storageTarget: StorageTarget = StorageTarget.Local) {
+    // Disallow non-existant storage targets!
+    if (storageTarget !== StorageTarget.Local && storageTarget !== StorageTarget.Session) {
+      // tslint:disable-next-line:prettier
+      throw new TypeError(`[storage-target] Expected \`WebStorage\` target to be one of: ('${StorageTarget.Local}', '${StorageTarget.Session}')`);
+    }
+
+    // Optimization: return the memoized value, if present.
+    if (isStorageAvailableCache.has(storageTarget)) return isStorageAvailableCache.get(storageTarget);
+
     const storage = window[storageTarget];
 
     try {
@@ -241,9 +252,10 @@ export const StorageProxy = {
       storage.setItem(x, x);
       storage.removeItem(x);
 
+      isStorageAvailableCache.set(storageTarget, true);
       return true;
     } catch (err) {
-      return (
+      const result =
         err &&
         // everything except Firefox
         (err.code === 22 ||
@@ -255,8 +267,11 @@ export const StorageProxy = {
           // Firefox
           err.name === 'NS_ERROR_DOM_QUOTA_REACHED') &&
         // acknowledge QuotaExceededError only if there's something already stored
-        (storage && storage.length !== 0)
-      );
+        (storage && storage.length !== 0);
+
+      isStorageAvailableCache.set(storageTarget, result);
+
+      return result;
     }
   },
 };
