@@ -236,14 +236,14 @@ export const StorageProxy = {
    * @returns `boolean` indicating whether the specified storage is available or not.
    */
   isStorageAvailable(storageTarget: StorageTarget = StorageTarget.Local) {
+    // Optimization: return the memoized value, if present.
+    if (isStorageAvailableCache.has(storageTarget)) return isStorageAvailableCache.get(storageTarget);
+
     // Disallow non-existant storage targets!
     if (storageTarget !== StorageTarget.Local && storageTarget !== StorageTarget.Session) {
       // tslint:disable-next-line:prettier
       throw new TypeError(`[storage-target] Expected \`WebStorage\` target to be one of: ('${StorageTarget.Local}', '${StorageTarget.Session}')`);
     }
-
-    // Optimization: return the memoized value, if present.
-    if (isStorageAvailableCache.has(storageTarget)) return isStorageAvailableCache.get(storageTarget);
 
     const storage = window[storageTarget];
 
