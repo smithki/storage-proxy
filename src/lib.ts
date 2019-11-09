@@ -245,9 +245,9 @@ export const StorageProxy = {
       throw new TypeError(`[storage-target] Expected \`WebStorage\` target to be one of: ('${StorageTarget.Local}', '${StorageTarget.Session}')`);
     }
 
-    const storage = window[storageTarget];
-
+    let storage: any;
     try {
+      storage = window[storageTarget];
       const x = '__storage_test__';
       storage.setItem(x, x);
       storage.removeItem(x);
