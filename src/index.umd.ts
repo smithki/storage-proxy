@@ -1,2 +1,2 @@
-import { StorageProxy } from './lib';
-export default StorageProxy;
+import { StorageProxyObject } from './lib';
+export default StorageProxyObject;
