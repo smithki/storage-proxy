@@ -4,6 +4,12 @@ import onChange from 'on-change';
 
 // --- Types & constants ---------------------------------------------------- //
 
+/** Web storage targets: `localStorage` and `sessionStorage`. */
+export enum StorageTarget {
+  Local = 'localStorage',
+  Session = 'sessionStorage',
+}
+
 const namespaceSymbol = Symbol('namespaceSymbol');
 const isStorageProxy = Symbol('isStorageProxy');
 const storageTargetSymbol = Symbol('storageTargetSymbol');
@@ -11,12 +17,6 @@ const defaultValuesSymbol = Symbol('defaultValuesSymbol');
 const storageProxyIntegrityKey = '__storageProxyIntegrity';
 
 const isStorageAvailableCache: Map<StorageTarget, boolean> = new Map();
-
-/** Web storage targets: `localStorage` and `sessionStorage`. */
-export enum StorageTarget {
-  Local = 'localStorage',
-  Session = 'sessionStorage',
-}
 
 /** The object type created by `StorageProxy.createLocalStorage()` and `StorageProxy.createSessionStorage()`. */
 export type StorageProxyObject<TStorageDefinitions> = Partial<TStorageDefinitions> & {
@@ -117,6 +117,17 @@ function createProxy<TStorageDefinitions extends any>(
       if (typeof proxyData[prop as any] === 'undefined') return null;
       return proxyData[prop as any];
     },
+  });
+
+  // Sync a `StorageProxyObject` if changes occur to its namespace in another
+  // window.
+  window.addEventListener('storage', ev => {
+    if (StorageProxy.isStorageAvailable(storageTarget)) {
+      if (ev.key === namespace && ev.storageArea === window[storageTarget]) {
+        const data = getDataFromStorage(namespace, storageTarget);
+        for (const [key, value] of Object.entries(data)) storageProxy[key] = value;
+      }
+    }
   });
 
   if (defaults) {

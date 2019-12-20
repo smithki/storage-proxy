@@ -200,6 +200,7 @@ export class StorageProxyTestFixture {
 
   @Test('Clearing `StorageProxy` removes all keys from both `WebStorage` and the local object')
   public clearStorageTest() {
+    localStorage.clear();
     StorageProxy.clearStorage(this.lStore);
 
     Expect(this.lStore.alreadySetDefault).toBeNull();
